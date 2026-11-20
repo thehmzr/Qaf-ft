@@ -1,13 +1,13 @@
 # ISLP study notes: Chapters 4, 5, 6 (for Qaf-ft)
 
-Source: `refs/islp_text/islp.txt`, lines 8735-18740 (pdftotext extraction of James, Witten, Hastie, Tibshirani, Taylor, *An Introduction to Statistical Learning with Applications in Python*, Springer 2023). Page numbers are the book's own (running headers). Chapter 4 = pp. 135-199, Chapter 5 = pp. 201-228, Chapter 6 = pp. 229-288.
+Source: `refs/islp_text/islp.txt`, lines 8735-18740 (pdftotext extraction of *An Introduction to Statistical Learning with Applications in Python*, Springer 2023). Page numbers are the book's own (running headers). Chapter 4 = pp. 135-199, Chapter 5 = pp. 201-228, Chapter 6 = pp. 229-288.
 
 Conventions used in these notes
 
-- "ISLP says" / a page citation = stated in the text I read. Numbers are quoted exactly as printed.
-- "(my arithmetic)" = a number I derived from numbers in the text; not printed in the book.
-- "Extension (not in ISLP)" = my own application or a standard technique the book does not cover in these chapters. Treat these as design suggestions, not as citations.
-- Figures are garbled in the extraction (axes and point clouds only). Everything said about a figure below comes from its caption and the surrounding prose, never from the plotted values. Where an equation was garbled I say so.
+- "ISLP says" / a page citation = stated in the text that was read. Numbers are quoted exactly as printed.
+- "(derived arithmetic)" = a number derived from numbers in the text; not printed in the book.
+- "Extension (not in ISLP)" = an application to Qaf-ft or a standard technique the book does not cover in these chapters. Treat these as design suggestions, not as citations.
+- Figures are garbled in the extraction (axes and point clouds only). Everything said about a figure below comes from its caption and the surrounding prose, never from the plotted values. Where an equation was garbled, that is stated.
 
 Two things the task brief asked about that are NOT in these chapters under that name:
 
@@ -163,7 +163,7 @@ Reading of Table 4.4 (p. 153):
 - LDA predicted 104 defaults; 81 actually defaulted, 23 did not. "only 23 out of 9,667 of the individuals who did not default were incorrectly labeled".
 - "of the 333 individuals who defaulted, 252 (or 75.7 %) were missed by LDA. So while the overall error rate is low, the error rate among individuals who defaulted is very high."
 - Sensitivity = "the percentage of true defaulters that are identified; it equals 24.3 %". Specificity = "the percentage of non-defaulters that are correctly identified; it equals (1 − 23/9667) = 99.8 %".
-- (my arithmetic) False positive rate 23/9667 = 0.24 %; precision 81/104 = 77.9 %.
+- (derived arithmetic) False positive rate 23/9667 = 0.24 %; precision 81/104 = 77.9 %.
 
 Why sensitivity is so low (p. 153): LDA approximates the Bayes classifier, "which has the lowest total error rate out of all classifiers ... regardless of the class from which the errors stem". The user's costs may be asymmetric. The fix is to move the threshold.
 
@@ -182,7 +182,7 @@ Reading of Table 4.5 (pp. 153-154):
 
 - LDA now predicts 430 defaults. "Of the 333 individuals who default, LDA correctly predicts all but 138, or 41.4 %" (down from 75.7 %).
 - Cost: "now 235 individuals who do not default are incorrectly classified. As a result, the overall error rate has increased slightly to 3.73 %."
-- (my arithmetic) Sensitivity 195/333 = 58.6 %; false positive rate 235/9667 = 2.43 %; precision 195/430 = 45.3 %. Moving the threshold from 0.5 to 0.2 multiplied the false positive count by about 10 (23 to 235) while true positives went from 81 to 195.
+- (derived arithmetic) Sensitivity 195/333 = 58.6 %; false positive rate 235/9667 = 2.43 %; precision 195/430 = 45.3 %. Moving the threshold from 0.5 to 0.2 multiplied the false positive count by about 10 (23 to 235) while true positives went from 81 to 195.
 
 Figure 4.7 (p. 154; values not readable, caption and prose only): error rates versus threshold. "Using a threshold of 0.5 ... minimizes the overall error rate ... But when a threshold of 0.5 is used, the error rate among the individuals who default is quite high ... As the threshold is reduced, the error rate among individuals who default decreases steadily, but the error rate among the individuals who do not default increases."
 
@@ -236,7 +236,7 @@ Stated distinction (p. 156): "The denominators for the false positive and true p
 - Table 4.8 (p. 160), naive Bayes on Default, threshold 0.5: predicted No = 9621 (true No), 244 (true Yes), total 9865; predicted Yes = 46 (true No), 89 (true Yes), total 135; column totals 9667, 333, 10000.
 - Table 4.9 (p. 161), naive Bayes, threshold 0.2: predicted No = 9339, 130, total 9469; predicted Yes = 328, 203, total 531; column totals 9667, 333, 10000.
 - ISLP's reading: at 0.5 "LDA has a slightly lower overall error rate, naive Bayes correctly predicts a higher fraction of the true defaulters". At 0.2 "Naive Bayes has a higher error rate, but correctly predicts almost two-thirds of the true defaults."
-- (my arithmetic) Table 4.8: error 290/10000 = 2.90 %, sensitivity 89/333 = 26.7 %, false positive rate 46/9667 = 0.48 %. Table 4.9: error 458/10000 = 4.58 %, sensitivity 203/333 = 61.0 %, false positive rate 328/9667 = 3.39 %. At the same nominal threshold naive Bayes produces more false positives than LDA (46 versus 23; 328 versus 235).
+- (derived arithmetic) Table 4.8: error 290/10000 = 2.90 %, sensitivity 89/333 = 26.7 %, false positive rate 46/9667 = 0.48 %. Table 4.9: error 458/10000 = 4.58 %, sensitivity 203/333 = 61.0 %, false positive rate 328/9667 = 3.39 %. At the same nominal threshold naive Bayes produces more false positives than LDA (46 versus 23; 328 versus 235).
 - When naive Bayes pays off (p. 161): with n = 10,000 and p = 2 "the reduction in variance resulting from the naive Bayes assumption is not necessarily worthwhile. We expect to see a greater pay-off to using naive Bayes relative to LDA or QDA in instances where p is larger or n is smaller".
 
 ## 4.5 A Comparison of Classification Methods (pp. 161-167)
@@ -335,7 +335,7 @@ Caravan data (rare positive class): 85 predictors, 5,822 individuals, Purchase Y
 - What matters instead (p. 186): "the overall error rate is not of interest. Instead, the fraction of individuals that are correctly predicted to buy insurance is of interest." KNN-1 confusion: predicted No: 880, 58; predicted Yes: 53, 9. 9/(53+9) = 0.145, "double the rate that one would obtain from random guessing".
 - Tuning parameter = hyperparameter (p. 187). K = 1..5 gives 62/9 (14.5 %), 6/1 (16.7 %), 20/3 (15.0 %), 3/0 (0.0 %), 7/1 (14.3 %) predicted/correct: "We see some variability — the numbers for K=4 are very different from the rest."
 - Logistic regression in sklearn (pp. 187-188): "by default it fits something like the ridge regression version of logistic regression ... This can be modified by appropriately setting the argument C below. Its default value is 1 but by setting it to a very large number, the algorithm converges to the same solution as the usual (unregularized) logistic regression estimator". Code uses `LogisticRegression(C=1e10, solver='liblinear')`.
-- With a 0.5 cut-off "none of the test observations are predicted to purchase insurance" (table: predicted No: 933, 67; predicted Yes: 0, 0). (The printed code line reads `logit_pred[:,1] > 5`; the prose says 0.5. I report it as printed.) With cut-off 0.25: predicted No: 913, 58; predicted Yes: 20, 9; 9/(20+9) = 0.310, "almost five times better than random guessing!". "we are not required to use a cut-off of 0.5."
+- With a 0.5 cut-off "none of the test observations are predicted to purchase insurance" (table: predicted No: 933, 67; predicted Yes: 0, 0). (The printed code line reads `logit_pred[:,1] > 5`; the prose says 0.5. Reported here as printed.) With cut-off 0.25: predicted No: 913, 58; predicted Yes: 20, 9; 9/(20+9) = 0.310, "almost five times better than random guessing!". "we are not required to use a cut-off of 0.5."
 
 Bikeshare (pp. 188-193): 8645 rows × 15 columns; `sm.OLS` and `sm.GLM(..., family=sm.families.Poisson())`. Dummy coding choice (baseline versus sum-to-zero) "really does not matter, provided that we interpret the model output correctly": fitted values agree (sum of squared differences 1.53e-20). Other families: `sm.families.Gamma()`.
 
@@ -362,8 +362,8 @@ Mapping of terms. Use Table 4.6 with "+" = the word/letter was recited wrongly (
 3. Choosing the mistake-flag threshold from the ROC curve at a target false-positive rate.
    - ISLP: the ROC curve shows TPR against FPR for all thresholds, but "The actual thresholds are not shown" (Figure 4.8), and the choice "must be based on domain knowledge" of costs (p. 154).
    - Procedure for Qaf-ft (Extension, consistent with §4.4.2): fix the target false-flag rate alpha (for example 1 % or 0.5 % of correct words). Collect verifier scores for truly correct words that the verifier did not train on (out-of-fold, speaker-disjoint; see Chapter 5). Set the threshold t to the (1 − alpha) quantile of those scores, so that FP/N is about alpha. Report the TPR at t as the operating point. Keep the table of (threshold, FPR, TPR) because the plotted ROC hides the thresholds.
-   - FPR and TPR have true-class denominators (p. 156), so an operating point fixed by FPR does not move when the proportion of mistakes changes between synthetic-heavy development data and real learners. Precision does move. Illustration (my arithmetic): at FPR 1 % and TPR 60 %, a 5 % mistake prevalence gives per 10,000 words 300 TP and 95 FP, precision 75.9 %; a 2 % prevalence gives 120 TP and 98 FP, precision 55.0 %.
-   - Per-ayah consequence (Extension, my arithmetic, assuming independent words): with a per-word false-flag rate of 1 %, a correctly recited 20-word ayah gets at least one false flag with probability 1 − 0.99^20 = 18.2 %; at 0.1 % per word it is 2.0 %. Decide whether the product requirement is per word or per ayah before fixing alpha.
+   - FPR and TPR have true-class denominators (p. 156), so an operating point fixed by FPR does not move when the proportion of mistakes changes between synthetic-heavy development data and real learners. Precision does move. Illustration (derived arithmetic): at FPR 1 % and TPR 60 %, a 5 % mistake prevalence gives per 10,000 words 300 TP and 95 FP, precision 75.9 %; a 2 % prevalence gives 120 TP and 98 FP, precision 55.0 %.
+   - Per-ayah consequence (Extension, derived arithmetic, assuming independent words): with a per-word false-flag rate of 1 %, a correctly recited 20-word ayah gets at least one false flag with probability 1 − 0.99^20 = 18.2 %; at 0.1 % per word it is 2.0 %. Decide whether the product requirement is per word or per ayah before fixing alpha.
    - Report AUC for comparing verifier variants ("ROC curves are useful for comparing different classifiers"), but Qaf-ft operates in the far-left corner of the ROC, so also report TPR at fixed FPR values (Extension). Two verifiers with equal AUC can differ a lot at FPR 1 %.
    - The book's Figure 4.8 and AUC 0.95 are on training data. Qaf-ft's ROC must come from held-out speakers; the book's own qualifier is "when evaluated on an independent test set not used in model training".
 
@@ -387,4 +387,396 @@ Mapping of terms. Use Table 4.6 with "+" = the word/letter was recited wrongly (
 
 ---
 
-<!-- NOTES-CONTINUE -->
+# Chapter 5. Resampling Methods (pp. 201-228)
+
+## 5.0 Chapter opening (p. 201)
+
+- Resampling methods "involve repeatedly drawing samples from a training set and refitting a model of interest on each sample in order to obtain additional information about the fitted model".
+- Two methods: cross-validation and the bootstrap.
+- Definitions: "The process of evaluating a model's performance is known as model assessment, whereas the process of selecting the proper level of flexibility for a model is known as model selection."
+- The bootstrap is used "most commonly to provide a measure of accuracy of a parameter estimate or of a given statistical learning method".
+
+## 5.1 Cross-Validation (pp. 202-211)
+
+- Test error = "the average error that results from using a statistical learning method to predict the response on a new observation—that is, a measurement that was not used in training the method".
+- Warning (p. 202): "the training error rate often is quite different from the test error rate, and in particular the former can dramatically underestimate the latter."
+- Two families of test-error estimates: mathematical adjustment of the training error (Chapter 6: Cp, AIC, BIC, adjusted R2), or holding out a subset of the training observations (this chapter).
+
+### 5.1.1 The Validation Set Approach (pp. 202-204)
+
+- Randomly divide the observations into a training set and a validation (hold-out) set; fit on the first, predict the second; the validation error (MSE for a quantitative response) estimates the test error.
+- Auto data example: 392 observations split 196 / 196; mpg on polynomial functions of horsepower. One split (Figure 5.2, left): quadratic much better than linear, cubic slightly worse than quadratic. Ten different random splits (Figure 5.2, right): all ten agree that quadratic beats linear, but "each of the ten curves results in a different test MSE estimate for each of the ten regression models considered. And there is no consensus among the curves as to which model results in the smallest validation set MSE."
+- Two drawbacks (pp. 203-204):
+  1. "the validation estimate of the test error rate can be highly variable, depending on precisely which observations are included in the training set and which observations are included in the validation set."
+  2. Only a subset of the observations is used to fit. "Since statistical methods tend to perform worse when trained on fewer observations, this suggests that the validation set error rate may tend to overestimate the test error rate for the model fit on the entire data set."
+
+### 5.1.2 Leave-One-Out Cross-Validation (pp. 204-206)
+
+- Hold out one observation (x1, y1), fit on the other n − 1, compute MSE1 = (y1 − y1-hat)^2. It is "approximately unbiased" for the test error but "a poor estimate because it is highly variable, since it is based upon a single observation". Repeat for every observation.
+- (5.1) `CV(n) = (1/n) sum_{i=1}^{n} MSE_i`.
+- Advantages over the validation set approach (p. 205): "far less bias" (training sets of n − 1), so it "tends not to overestimate the test error rate as much"; and no randomness: "performing LOOCV multiple times will always yield the same results".
+- Cost: n model fits. Shortcut for least squares linear or polynomial regression only:
+  - (5.2) `CV(n) = (1/n) sum_{i=1}^{n} ( (y_i − y_i-hat) / (1 − h_i) )^2`, where h_i is the leverage (eq. 3.37, p. 105), which "lies between 1/n and 1, and reflects the amount that an observation influences its own fit".
+  - "The magic formula (5.2) does not hold in general, in which case the model has to be refit n times." LOOCV itself is general and can be used with logistic regression or LDA.
+
+### 5.1.3 k-Fold Cross-Validation (pp. 206-208)
+
+- Randomly divide the observations "into k groups, or folds, of approximately equal size"; each fold in turn is the validation set while the method is fit on the other k − 1 folds.
+- (5.3) `CV(k) = (1/k) sum_{i=1}^{k} MSE_i`.
+- LOOCV is the special case k = n. "In practice, one typically performs k-fold CV using k = 5 or k = 10."
+- Variability (Figure 5.4, right): nine different 10-fold CV runs on Auto give "some variability in the CV estimates as a result of the variability in how the observations are divided into ten folds. But this variability is typically much lower than the variability in the test error estimates that results from the validation set approach".
+- Simulated-data check (Figure 5.6): LOOCV and 10-fold CV estimates "are very similar". Compared with the true test MSE they are almost identical in one panel, overestimate at high flexibility in another, and "have the correct general shape, but they underestimate the true test MSE" in the third.
+- Two different uses of CV (p. 208): sometimes "the actual estimate of the test MSE is of interest"; at other times "we are interested only in the location of the minimum point in the estimated test MSE curve" (choosing among methods or flexibility levels). "despite the fact that they sometimes underestimate the true test MSE, all of the CV curves come close to identifying the correct level of flexibility".
+
+### 5.1.4 Bias-Variance Trade-Off for k-Fold Cross-Validation (pp. 208-209)
+
+- Bias: the validation set approach overestimates test error (trained on about half the data). LOOCV is "approximately unbiased" (n − 1 observations). k-fold with k = 5 or 10 has "an intermediate level of bias, since each training set contains approximately (k − 1)n/k observations". "from the perspective of bias reduction, it is clear that LOOCV is to be preferred to k-fold CV."
+- Variance: "LOOCV has higher variance than does k-fold CV with k < n." Reason: LOOCV averages "the outputs of n fitted models, each of which is trained on an almost identical set of observations; therefore, these outputs are highly (positively) correlated with each other". k-fold models overlap less. "Since the mean of many highly correlated quantities has higher variance than does the mean of many quantities that are not as highly correlated, the test error estimate resulting from LOOCV tends to have higher variance".
+- Recommendation (p. 209): "one performs k-fold cross-validation using k = 5 or k = 10, as these values have been shown empirically to yield test error rate estimates that suffer neither from excessively high bias nor from very high variance."
+
+Summary table (assembled from §5.1.1-5.1.4):
+
+| Approach | Training size per fit | Bias of test-error estimate | Variance | Cost | Random? |
+|---|---|---|---|---|---|
+| Validation set | about n/2 | overestimates (highest bias) | high: depends on the split | 1 fit | yes |
+| LOOCV | n − 1 | approximately unbiased | higher than k-fold (correlated fits) | n fits, or 1 with (5.2) for least squares | no |
+| k-fold, k = 5 or 10 | (k − 1)n/k | intermediate | lower than LOOCV | k fits | yes, mildly |
+
+### 5.1.5 Cross-Validation on Classification Problems (pp. 209-211)
+
+- Same procedure, but the error is the number of misclassified observations.
+- (5.4) `CV(n) = (1/n) sum_{i=1}^{n} Err_i`, with `Err_i = I(y_i != y_i-hat)`. k-fold and validation-set error rates are defined analogously.
+- Example (Figure 5.7; simulated two-dimensional data of Figure 2.13): logistic regression with polynomial terms of degree 1 to 4 has true test error rates 0.201, 0.197, 0.160, 0.162; the Bayes error rate is 0.133.
+- (5.5) quadratic logistic regression: `log( p/(1 − p) ) = b0 + b1 X1 + b2 X1^2 + b3 X2 + b4 X2^2`.
+- Figure 5.8 (left): training error "tends to decrease as the flexibility of the fit increases"; test error "displays a characteristic U-shape"; the 10-fold CV error "provides a pretty good approximation to the test error rate. While it somewhat underestimates the error rate, it reaches a minimum when fourth-order polynomials are used, which is very close to the minimum of the test curve, which occurs when third-order polynomials are used." The true test error is about the same for third to sixth order.
+- Figure 5.8 (right), KNN: "the training error rate cannot be used to select the optimal value for K"; the CV curve "slightly underestimates the test error rate" but has its minimum "very close to the best value for K".
+
+## 5.2 The Bootstrap (pp. 212-215)
+
+- Purpose: "a widely applicable and extremely powerful statistical tool that can be used to quantify the uncertainty associated with a given estimator or statistical learning method". Its power is that it "can be easily applied to a wide range of statistical learning methods, including some for which a measure of variability is otherwise difficult to obtain and is not automatically output by statistical software".
+- Toy problem: invest a fraction alpha in asset X and 1 − alpha in Y to minimize Var(alpha X + (1 − alpha) Y).
+  - (5.6) `alpha = (sigma_Y^2 − sigma_XY) / (sigma_X^2 + sigma_Y^2 − 2 sigma_XY)`.
+  - (5.7) the same with estimated variances and covariance gives alpha-hat.
+- Simulation with known truth: sigma_X^2 = 1, sigma_Y^2 = 1.25, sigma_XY = 0.5, so alpha = 0.6. Four simulated sets of 100 pairs give alpha-hat = 0.576, 0.532, 0.657, 0.651 (Figure 5.9). Repeating 1,000 times: mean of alpha-hat = 0.5996, standard deviation 0.083, so SE(alpha-hat) is about 0.083: "for a random sample from the population, we would expect alpha-hat to differ from alpha by approximately 0.08, on average."
+- The problem with real data: "we cannot generate new samples from the original population". The bootstrap answer: "Rather than repeatedly obtaining independent data sets from the population, we instead obtain distinct data sets by repeatedly sampling observations from the original data set."
+- Mechanics (Figure 5.11, n = 3): draw n observations from the data set Z with replacement to form a bootstrap data set Z∗1 ("the same observation can occur more than once"). "Note that if an observation is contained in Z∗1, then both its X and Y values are included." Compute alpha-hat∗1. Repeat B times.
+- (5.8) bootstrap standard error: `SE_B(alpha-hat) = sqrt( (1/(B − 1)) sum_{r=1}^{B} ( alpha-hat∗r − (1/B) sum_{r'=1}^{B} alpha-hat∗r' )^2 )`.
+- Result: with B = 1,000 bootstrap samples from a single data set the bootstrap SE is 0.087, "very close to the estimate of 0.083 obtained using 1,000 simulated data sets"; the bootstrap histogram resembles the idealized one (Figure 5.10).
+
+## 5.3 Lab: Cross-Validation and the Bootstrap (pp. 215-224)
+
+- Validation set (pp. 216-217): `train_test_split(Auto, test_size=196, random_state=0)`. "It is generally a good idea to set a random seed". Validation MSE for degree 1, 2, 3: 23.62, 18.76, 18.80. With `random_state=3`: 20.76, 16.95, 16.97. Same conclusion, different numbers.
+- Cross-validation (pp. 217-220): `cross_validate(model, X, Y, cv=...)`; an integer cv gives K-fold, cv = n gives LOOCV. LOOCV MSE for degrees 1-5: 24.2315, 19.2482, 19.3350, 19.4244, 19.0332. 10-fold (`KFold(n_splits=10, shuffle=True, random_state=0)`, with the code comment "use same splits for each degree"): 24.2077, 19.1853, 19.2763, 19.4785, 19.1372.
+- `cross_validate()` "is flexible and can take different splitting mechanisms as an argument" (p. 219), for example `ShuffleSplit`.
+- Warning on repeated random splits (p. 220): ten `ShuffleSplit` repetitions give mean 23.8022 and standard deviation 1.4218, but "this standard deviation is not a valid estimate of the sampling variability of the mean test score or the individual scores, since the randomly-selected training samples overlap and hence introduce correlations. But it does give an idea of the Monte Carlo variation incurred by picking different random folds."
+- Bootstrap (pp. 220-224): "it can be applied in almost all situations. No complicated mathematical calculations are required." Pattern: a function `func(D, idx)` computing the statistic on rows idx; `boot_SE(func, D, n=None, B=1000, seed=0)` draws `rng.choice(D.index, n, replace=True)` B times and returns the standard deviation of the B values.
+  - Portfolio: alpha-hat = 0.5758 on all 100 observations; one bootstrap replicate 0.6074; bootstrap SE with B = 1,000 is 0.0912.
+  - Regression coefficients (mpg on horsepower): bootstrap SE 0.8488 (intercept) and 0.0074 (slope) versus formula SE 0.717 and 0.006. The book's reading (p. 223): this "suggests the opposite" of a bootstrap problem. The formulas rely on an estimate of the noise variance that assumes the linear model is correct (it is not: the relationship is non-linear) and on the x_i being fixed. "The bootstrap approach does not rely on any of these assumptions, and so it is likely giving a more accurate estimate of the standard errors".
+  - Quadratic model (which fits well): bootstrap 2.067840, 0.033019, 0.000120 versus formula 1.800, 0.031, 0.000: closer agreement.
+  - The bootstrap function uses `clone()` so that derived features "will be re-fit on the resampled data frame".
+
+## 5.4 Exercises (pp. 224-228, skimmed)
+
+- (2) probability that observation j is not in a bootstrap sample is (1 − 1/n)^n. (Derived arithmetic: the inclusion probability 1 − (1 − 1/n)^n is 0.672 for n = 5, 0.634 for n = 100, and tends to 1 − 1/e = 0.632; the book asks for these, it does not print them.)
+- (3) advantages and disadvantages of k-fold versus validation set and LOOCV. (4) estimating the standard deviation of a prediction.
+- (5) validation-set estimate for logistic regression on Default with three different splits. (6) bootstrap versus formula standard errors of logistic regression coefficients. (7) LOOCV by hand for logistic regression. (8) LOOCV on simulated data with different seeds (LOOCV is deterministic). (9) bootstrap SE of the mean, the median and the tenth percentile of medv; hint for a 95 % confidence interval: `[mu-hat − 2 SE(mu-hat), mu-hat + 2 SE(mu-hat)]`; "there is no simple formula for computing the standard error of the median".
+
+## Where ISLP states the right-way / wrong-way rule for cross-validation
+
+Chapter 5 has no section on this. The rule is stated in Chapter 6:
+
+- §6.1.1 (p. 231): "If cross-validation is used to select the best model, then Step 2 is repeated on each training fold, and the validation errors are averaged to select the best value of k. Then the model M_k fit on the full training set is delivered for the chosen k."
+- §6.1.3 (p. 239): "when cross-validation is used, the sequence of models M_k in Algorithms 6.1–6.3 is determined separately for each training fold ... This means, for example with best-subset regression, that M_k, the best subset of size k, can differ across the folds. Once the best size k is chosen, we find the best model of that size on the full data set."
+- Lab §6.5.1 (p. 271), the clearest statement: "We must use only the training observations to perform all aspects of model-fitting — including variable selection. Therefore, the determination of which model of a given size is best must be made using only the training observations in each training fold. This point is subtle but important. If the full data set is used to select the best subset at each step, then the validation set errors and cross-validation errors that we obtain will not be accurate estimates of the test error."
+- Lab §6.5.2 (p. 277): standardization inside a `Pipeline` under `GridSearchCV` "is carried out on each fold"; with `ElasticNetCV` inside a pipeline "it is carried out only once", so results differ slightly.
+- Lab §6.5.2 (p. 278): after choosing lambda by CV, "cross-validation will have touched all of its data in choosing lambda, hence we have no further data to estimate test error". Remedy: split off a test set first and run CV on the training part only, "cross-validation nested within the validation set approach" (75 % / 25 % in the lab; test MSE 132393.84).
+
+Wrong way: use all the data (including what will later be held out) to choose features, standardization constants, hyperparameters or thresholds, then cross-validate only the final fit. Right way: every step that looks at the response is repeated inside each training fold; the held-out fold is used only to score.
+
+(From *The Elements of Statistical Learning* §7.10.2, recalled from memory and not part of the text read here, so verify before citing: with 50 samples, 5,000 pure-noise predictors and a true error rate of 50 %, screening the 100 predictors most correlated with the labels on all the data and then cross-validating a 1-nearest-neighbour classifier gave an average CV error of about 3 %.)
+
+## Application to Qaf-ft (Chapter 5)
+
+1. Hold out by SPEAKER, not by word or clip (Extension; ISLP's folds are a random division of independent observations and the book does not discuss grouped data). The book's argument for why a held-out error is honest is that the held-out observation "was not used in the fitting process" (p. 204). Words in one clip and clips from one reciter share voice, microphone, room, tempo and error habits. If the same reciter is in both the training and validation folds, the validation words are not new in the sense that matters, and the CV error is optimistic in the same direction as the training error. Rules:
+   - Folds are formed over speaker IDs (sklearn `GroupKFold` / `StratifiedGroupKFold` passed as `cv=`; the lab notes that `cross_validate()` "can take different splitting mechanisms").
+   - A synthetic-error clip derived from a real clip goes in the same fold as its source clip and that source's speaker. Otherwise near-duplicate audio sits on both sides of the split.
+   - The acoustic model is part of "all aspects of model-fitting". If the CTC model was fine-tuned on a speaker, verifier features for that speaker come from a model that has seen that voice, and they will look cleaner than for a new user. Verifier training and evaluation features should come from speakers the acoustic model did not train on, or from cross-fitted acoustic models.
+   - If speaker IDs are unreliable or missing for some clips, group by the most conservative unit available and state it.
+
+2. Everything that touches labels goes inside the loop (pp. 231, 239, 271, 277). For the verifier that means: feature selection, feature standardization constants, the ridge/lasso lambda, any calibration map, the prior correction, and the decision threshold. Selecting features or the threshold on the pooled data and then reporting the cross-validated false-flag rate is the wrong way: the choice was tuned to the labels of the words that are then used to score it, so the reported rate is too low. This matters most for exactly the quantity Qaf-ft cares about, because a threshold tuned to hit a 1 % false-flag rate on a sample will show 1 % on that sample by construction.
+
+3. A workable evaluation design with about 900 labelled learner clips (Extension, following p. 278's nested scheme):
+   - Set aside a final test set of speakers first; touch it once.
+   - On the remaining speakers run speaker-grouped 5- or 10-fold CV (§5.1.4 recommendation). Inside each training fold: fit scaler, select features, choose lambda with an inner grouped CV, fit the verifier, pick the threshold for the target false-flag rate from inner out-of-fold scores of correct words. On the outer held-out fold: record FP, N, TP, P at that threshold.
+   - Pool the outer-fold counts to estimate FP/N and TP/P. Then refit everything on all development data for the delivered model ("the model is re-fit using all of the available observations", p. 252).
+   - Stratify folds so that each one contains real mistakes; with rare positives an unstratified fold can contain almost none (Extension).
+
+4. Choice of k. Use k = 5 or 10 over speakers. Leave-one-speaker-out is affordable for a small logistic verifier but there is no shortcut formula (5.2 holds only for least squares) and the estimate has higher variance (§5.1.4). A single train/validation split is the weakest option for a data set this small: Figure 5.2 shows ten splits giving ten different answers, and it overestimates error because it trains on a fraction of the data.
+
+5. Use CV for selection, a clean test set for the headline number. CV curves locate the best flexibility well even when their level is off (p. 208, Figure 5.6), so trust CV to choose among verifier variants, but quote the final false-flag rate from data that played no part in any choice.
+
+6. Cross-validate the metric that matters. (5.4) uses misclassification rate, which is the accuracy number that §4.4.2 shows to be uninformative for rare positives. The Chapter 6 lab notes "One can cross-validate different metrics to choose a parameter" (p. 277). For Qaf-ft cross-validate the detection rate at the fixed false-flag rate, or the binomial deviance, not accuracy.
+
+7. Repeat the CV with different fold assignments to see the Monte Carlo variation (Figure 5.4), but do not turn the spread across repeats or folds into a confidence interval: the lab says such a standard deviation "is not a valid estimate of the sampling variability" because training sets overlap (p. 220; also footnote 9, p. 271, "crude"). Use the bootstrap for intervals.
+
+8. Bootstrap confidence intervals for word error rate, resampling by speaker (Extension built on §5.2). WER is a ratio (substitutions + deletions + insertions over reference words) summed over utterances of unequal length; like the median in exercise 9 it has no simple standard-error formula, and its terms are correlated within speaker. Procedure:
+   - Unit of resampling = speaker. Draw S speakers with replacement from the S test speakers; a speaker drawn twice contributes all of that speaker's clips twice. The book's rule that a resampled observation brings "both its X and Y values" generalizes to: a resampled speaker brings every clip, reference, hypothesis and label.
+   - Recompute the pooled WER (total errors over total reference words) on each bootstrap sample. B = 1,000 as in the book.
+   - SE from (5.8). Interval: the book's own form is estimate ± 2 SE (exercise 9d). A percentile interval (2.5th and 97.5th percentiles of the B values) is the usual alternative for a bounded, skewed statistic (Extension).
+   - Resampling words or clips instead of speakers treats correlated items as independent and gives intervals that are too narrow.
+   - The same procedure applies to diacritic error rate and phoneme error rate.
+
+9. Bootstrap confidence interval for the false-flag rate (Extension). Same speaker-level resampling; statistic = FP/N at the frozen threshold. Notes:
+   - To include the uncertainty from choosing the threshold, redo the threshold choice inside each replicate and score on speakers not drawn in that replicate; with the threshold frozen the interval covers only test-sampling uncertainty. Say which one is reported.
+   - Rough size of the problem (derived arithmetic, binomial, assuming independent words, which is optimistic): the standard error of an estimated rate alpha from N correct words is sqrt(alpha(1 − alpha)/N). For alpha = 1 % and N = 5,000 it is 0.14 percentage points. For alpha = 0.1 % and N = 5,000 only about 5 false flags are expected and the standard error is 0.045 points, a relative error of about 45 %. A very low false-flag target cannot be verified on a small test set; correlated words within speakers make it harder still.
+   - With zero false flags observed the bootstrap interval collapses to zero width, which is not evidence of a zero rate. Report an exact binomial upper bound instead (roughly 3/N at 95 % under independence; Extension, not in ISLP).
+   - For comparing two systems, resample the same speakers for both and bootstrap the difference (paired bootstrap, Extension).
+
+10. What the bootstrap does not fix. It measures sampling variability of the data in hand. If the test clips are unrepresentative (for example, mistakes are mostly synthetic), the interval is a tight interval around the wrong quantity. Report real-learner and synthetic results separately, each with its own interval.
+
+11. Model-free standard errors for the verifier's coefficients. The lab's lesson (p. 223) is that formula standard errors are wrong when their assumptions fail and the bootstrap is then more trustworthy. Logistic-regression z-statistics assume independent words; use the speaker bootstrap of the whole fitting pipeline (the lab's `clone()` pattern) to see whether a feature's coefficient is stable in sign and size.
+
+---
+
+# Chapter 6. Linear Model Selection and Regularization (pp. 229-288)
+
+## 6.0 Chapter opening (pp. 229-230)
+
+- (6.1) `Y = b0 + b1 X1 + ... + bp Xp + e`.
+- Two reasons to replace plain least squares:
+  - Prediction accuracy. With n much larger than p least squares has low variance. "if n is not much larger than p, then there can be a lot of variability in the least squares fit, resulting in overfitting and consequently poor predictions on future observations". "if p > n, then there is no longer a unique least squares coefficient estimate: there are infinitely many solutions. Each of these least squares solutions gives zero error on the training data, but typically very poor test set performance due to extremely high variance." "By constraining or shrinking the estimated coefficients, we can often substantially reduce the variance at the cost of a negligible increase in bias."
+  - Model interpretability. Irrelevant variables add "unnecessary complexity"; "least squares is extremely unlikely to yield any coefficient estimates that are exactly zero". Feature (variable) selection removes them.
+- Footnote 1 (p. 230; the comparison symbol is garbled, evidently "p much larger than n"): the least squares solution with the smallest sum of squared coefficients "can sometimes perform quite well. See Section 10.8".
+- Three classes of methods: subset selection; shrinkage (regularization); dimension reduction.
+- Scope (p. 230): "the same concepts apply to other methods, such as the classification models seen in Chapter 4."
+
+## 6.1 Subset Selection (pp. 231-240)
+
+### 6.1.1 Best Subset Selection (pp. 231-233)
+
+Algorithm 6.1 (best subset selection):
+
+1. M_0 = null model (no predictors; predicts the sample mean).
+2. For k = 1, ..., p: fit all (p choose k) models with exactly k predictors; M_k = the one with smallest RSS (largest R2).
+3. Select one model among M_0, ..., M_p "using the prediction error on a validation set, Cp (AIC), BIC, or adjusted R2. Or use the cross-validation method."
+
+- Step 3 must not use RSS or R2: "the RSS of these p + 1 models decreases monotonically, and the R2 increases monotonically, as the number of features included in the models increases ... a low RSS or a high R2 indicates a model with a low training error, whereas we wish to choose a model that has a low test error."
+- With cross-validation, Step 2 is repeated on each training fold (p. 231).
+- For logistic regression use the deviance in place of RSS: "negative two times the maximized log-likelihood; the smaller the deviance, the better the fit" (p. 232).
+- Cost: 2^p models. p = 10 gives about 1,000; p = 20 "over one million"; "computationally infeasible for values of p greater than around 40".
+- Credit example (Figure 6.1): ten predictors, eleven variables after dummy coding; "from the three-variable model on, there is little improvement in RSS and R2".
+
+### 6.1.2 Stepwise Selection (pp. 233-235)
+
+- Statistical reason to restrict the search (p. 233): "The larger the search space, the higher the chance of finding models that look good on the training data, even though they might not have any predictive power on future data. Thus an enormous search space can lead to overfitting and high variance of the coefficient estimates."
+
+Algorithm 6.2 (forward stepwise): start from M_0; for k = 0, ..., p − 1 consider the p − k models that add one predictor to M_k and keep the best (smallest RSS / highest R2) as M_{k+1}; then select among M_0, ..., M_p by validation error, Cp (AIC), BIC, adjusted R2 or cross-validation.
+
+- Fits 1 + p(p + 1)/2 models. For p = 20: 211 versus 1,048,576 for best subset.
+- Not guaranteed to find the best model (nested by construction). Table 6.1 (Credit): one variable: rating (both methods); two: rating, income; three: rating, income, student; four: best subset picks cards, income, student, limit, forward stepwise picks rating, income, student, limit.
+- Usable when n < p, but only up to M_{n−1}.
+
+Algorithm 6.3 (backward stepwise): start from the full model M_p; for k = p, ..., 1 drop the least useful predictor to get M_{k−1}; select as above. Also 1 + p(p + 1)/2 models. "Backward selection requires that the number of samples n is larger than the number of variables p". Forward stepwise "is the only viable subset method when p is very large".
+
+Hybrid approaches add variables sequentially and may remove variables that no longer help.
+
+Footnotes 2 and 3: both stepwise methods perform a guided search, so "the effective model space considered contains substantially more than p(p + 1)/2 + 1 models".
+
+### 6.1.3 Choosing the Optimal Model (pp. 235-240)
+
+Two routes: (1) indirectly, adjust the training error for overfitting; (2) directly, validation set or cross-validation.
+
+Adjusted training-error criteria for a least squares model with d predictors, sigma^2-hat an estimate of the error variance ("Typically ... estimated using the full model containing all predictors"):
+
+- (6.2) `Cp = (1/n)(RSS + 2 d sigma^2-hat)`. Penalty 2 d sigma^2-hat. If sigma^2-hat is unbiased, Cp is an unbiased estimate of test MSE. Choose the lowest. Footnote 4: Mallow's version `Cp' = RSS/sigma^2-hat + 2d − n`, with `Cp = (1/n) sigma^2-hat (Cp' + n)`, same minimizer.
+- AIC (unnumbered, p. 237): `AIC = (1/n)(RSS + 2 d sigma^2-hat)` for least squares with Gaussian errors, constants omitted; "Cp and AIC are proportional to each other". AIC "is defined for a large class of models fit by maximum likelihood". Footnote 5: a second AIC formula with log(RSS) applies when sigma^2 is not estimated explicitly.
+- (6.3) `BIC = (1/n)(RSS + log(n) d sigma^2-hat)`. "Since log n > 2 for any n > 7, the BIC statistic generally places a heavier penalty on models with many variables, and hence results in the selection of smaller models than Cp."
+- (6.4) `Adjusted R2 = 1 − (RSS/(n − d − 1)) / (TSS/(n − 1))`. Larger is better; maximizing it is equivalent to minimizing RSS/(n − d − 1). Adding noise variables increases d with little RSS decrease, so adjusted R2 falls.
+- Credit results: Cp selects six variables (income, limit, rating, cards, age, student); BIC selects four (income, limit, cards, student); adjusted R2 selects seven (adds own). The curves are flat after four variables.
+- Standing of the criteria (p. 238): Cp, AIC, BIC "have rigorous theoretical justifications" that "rely on asymptotic arguments (scenarios where the sample size n is very large)". Adjusted R2 "is not as well motivated in statistical theory". AIC and BIC "can also be defined for more general types of models".
+
+Validation and cross-validation (pp. 238-240):
+
+- Advantage over the criteria: "it provides a direct estimate of the test error, and makes fewer assumptions about the true underlying model. It can also be used in a wider range of model selection tasks, even in cases where it is hard to pinpoint the model degrees of freedom ... or hard to estimate the error variance".
+- "nowadays with fast computers, the computations required to perform cross-validation are hardly ever an issue. Thus, cross-validation is a very attractive approach".
+- Credit (Figure 6.3): validation set (three-quarters training) and 10-fold CV both pick a six-variable model, but "all three approaches suggest that the four-, five-, and six-variable models are roughly equivalent"; the estimated test errors of the 3- to 11-variable models "are quite similar"; a different split "would surely change" the exact minimizer.
+
+One-standard-error rule (p. 240): "We first calculate the standard error of the estimated test MSE for each model size, and then select the smallest model for which the estimated test error is within one standard error of the lowest point on the curve. The rationale here is that if a set of models appear to be more or less equally good, then we might as well choose the simplest model—that is, the model with the smallest number of predictors." On Credit it selects the three-variable model.
+
+## 6.2 Shrinkage Methods (pp. 240-253)
+
+Fit all p predictors but constrain (regularize) the coefficients; "shrinking the coefficient estimates can significantly reduce their variance".
+
+### 6.2.1 Ridge Regression (pp. 240-244)
+
+- Least squares minimizes `RSS = sum_{i=1}^{n} ( y_i − b0 − sum_{j=1}^{p} b_j x_ij )^2`.
+- (6.5) ridge minimizes `RSS + lambda sum_{j=1}^{p} b_j^2`, with tuning parameter lambda >= 0. The second term is the shrinkage penalty.
+- lambda = 0 gives least squares; lambda to infinity sends the coefficients to zero (the null model). One coefficient vector per lambda; "Selecting a good value for lambda is critical".
+- The intercept is not penalized (p. 241): "We want to shrink the estimated association of each variable with the response; however, we do not want to shrink the intercept". With centered predictors, b0-hat = y-bar.
+- l2 norm: `||b||_2 = sqrt( sum_j b_j^2 )`. The ratio `||b-hat^R_lambda||_2 / ||b-hat||_2` runs from 1 (lambda = 0) to 0 (lambda infinite) and measures the amount of shrinkage.
+- Individual coefficients "may occasionally increase as lambda increases" although the norm always decreases.
+- Scale: least squares is scale equivariant; ridge is not. The ridge fit for X_j depends on lambda, on the scaling of X_j, and "may even depend on the scaling of the other predictors". "Therefore, it is best to apply ridge regression after standardizing the predictors":
+  - (6.6) `x~_ij = x_ij / sqrt( (1/n) sum_{i=1}^{n} (x_ij − x-bar_j)^2 )`.
+- Why it helps (pp. 242-244): bias-variance. "As lambda increases, the flexibility of the ridge regression fit decreases, leading to decreased variance but increased bias." Simulation with p = 45, n = 50 (Figure 6.5): for lambda up to about 10 "the variance decreases rapidly, with very little increase in bias"; minimum test MSE at approximately lambda = 30; the least squares MSE (lambda = 0) "is almost as high as that of the null model".
+- When it works best: "in situations where the least squares estimates have high variance", i.e. p close to n; for p > n least squares has no unique solution but ridge "can still perform well".
+- Computation: one fit per lambda, and the whole path costs about one least squares fit, versus 2^p fits for best subset.
+
+### 6.2.2 The Lasso (pp. 244-251)
+
+- Ridge's disadvantage: it "will include all p predictors in the final model"; no coefficient is set exactly to zero (unless lambda is infinite). Fine for accuracy, a problem for interpretation.
+- (6.7) lasso minimizes `RSS + lambda sum_{j=1}^{p} |b_j|`. l1 norm `||b||_1 = sum |b_j|`.
+- The l1 penalty forces "some of the coefficient estimates to be exactly equal to zero when the tuning parameter lambda is sufficiently large". The lasso "performs variable selection" and "yields sparse models".
+- Credit path (Figure 6.6): rating enters first, then student and limit almost together, then income.
+
+Constrained formulations (pp. 245-246):
+
+- (6.8) lasso: minimize RSS subject to `sum_j |b_j| <= s`.
+- (6.9) ridge: minimize RSS subject to `sum_j b_j^2 <= s`.
+- (6.10) best subset: minimize RSS subject to `sum_j I(b_j != 0) <= s`. Computationally infeasible for large p; ridge and lasso are "computationally feasible alternatives to best subset selection that replace the intractable form of the budget". "the lasso is much more closely related to best subset selection".
+- For every lambda there is an s giving the same solution.
+
+Geometry (Figure 6.7, pp. 246-247): for p = 2 the lasso constraint region is a diamond `|b1| + |b2| <= s`, the ridge region a circle `b1^2 + b2^2 <= s`. RSS contours are ellipses centered at the least squares estimate. The solution is "the first point at which an ellipse contacts the constraint region". The circle has no corners, so contact is generally off the axes and all ridge coefficients are non-zero. "the lasso constraint has corners at each of the axes, and so the ellipse will often intersect the constraint region at an axis. When this occurs, one of the coefficients will equal zero." In higher dimensions (polytope versus hypersphere) many coefficients can be zero at once.
+
+Lasso versus ridge on prediction (pp. 247-249):
+
+- Figure 6.8: all 45 predictors related to the response. Biases almost identical, ridge variance slightly lower, so "the minimum MSE of ridge regression is slightly smaller than that of the lasso".
+- Figure 6.9: response depends on only 2 of 45 predictors. "Now the lasso tends to outperform ridge regression in terms of bias, variance, and MSE."
+- Rule (p. 248): "neither ridge regression nor the lasso will universally dominate the other. In general, one might expect the lasso to perform better in a setting where a relatively small number of predictors have substantial coefficients, and the remaining predictors have coefficients that are very small or that equal zero. Ridge regression will perform better when the response is a function of many predictors, all with coefficients of roughly equal size. However, the number of predictors that is related to the response is never known a priori for real data sets. A technique such as cross-validation can be used in order to determine which approach is better on a particular data set."
+- Models with different regularization can be compared by indexing them on training R2 (Figure 6.8, right).
+
+Special case n = p, X the identity, no intercept (pp. 249-250):
+
+- (6.11) least squares minimizes `sum_j (y_j − b_j)^2`, solution b_j-hat = y_j.
+- (6.12) ridge objective `sum_j (y_j − b_j)^2 + lambda sum_j b_j^2`; (6.13) lasso objective `sum_j (y_j − b_j)^2 + lambda sum_j |b_j|`.
+- (6.14) ridge: `b_j-hat^R = y_j / (1 + lambda)`: every coefficient shrunk by the same proportion.
+- (6.15) lasso: `b_j-hat^L = y_j − lambda/2 if y_j > lambda/2; y_j + lambda/2 if y_j < −lambda/2; 0 if |y_j| <= lambda/2`: soft-thresholding, a constant shift toward zero, and small coefficients become exactly zero.
+- General case: "ridge regression more or less shrinks every dimension of the data by the same proportion, whereas the lasso more or less shrinks all coefficients toward zero by a similar amount, and sufficiently small coefficients are shrunken all the way to zero."
+
+Bayesian interpretation (pp. 250-251): posterior `p(b | X, Y) proportional to f(Y | X, b) p(b)`, with `p(b) = prod_j g(b_j)`.
+
+- g Gaussian with mean zero: the posterior mode is the ridge solution (and it is also the posterior mean).
+- g double-exponential (Laplace) with mean zero: the posterior mode is the lasso solution (not the posterior mean, which is not sparse).
+- "the lasso prior is steeply peaked at zero ... the lasso expects a priori that many of the coefficients are (exactly) zero, while ridge assumes the coefficients are randomly distributed about zero."
+
+Exercise 5 (p. 285) adds: "ridge regression tends to give similar coefficient values to correlated variables, whereas the lasso may give quite different coefficient values to correlated variables"; with two identical predictors the lasso solution is not unique.
+
+### 6.2.3 Selecting the Tuning Parameter (pp. 252-253)
+
+- Procedure: "We choose a grid of lambda values, and compute the cross-validation error for each value of lambda ... We then select the tuning parameter value for which the cross-validation error is smallest. Finally, the model is re-fit using all of the available observations and the selected value of the tuning parameter."
+- Figure 6.12 (ridge on Credit, LOOCV): the selected lambda is small and "the dip is not very pronounced, so there is rather a wide range of values that would give a very similar error. In a case like this we might simply use the least squares solution."
+- Figure 6.13 (lasso, ten-fold CV, sparse simulation with p = 45, n = 50): the CV minimum corresponds to a fit in which only the two signal variables are non-zero, whereas least squares "assigns a large coefficient estimate to only one of the two signal variables". Signal versus noise variables.
+- Note: the text applies the one-standard-error rule to subset size (§6.1.3); in §6.2.3 it picks the lambda with the smallest CV error. Applying the one-standard-error rule to lambda is the natural analogue but is an Extension here.
+
+## 6.3 Dimension Reduction Methods (pp. 253-262)
+
+- (6.16) `Z_m = sum_{j=1}^{p} phi_jm X_j`, M < p linear combinations.
+- (6.17) `y_i = theta_0 + sum_{m=1}^{M} theta_m z_im + e_i`, fit by least squares.
+- (6.18) implied constraint `b_j = sum_{m=1}^{M} theta_m phi_jm`. The constraint can bias the coefficients, but when p is large relative to n, choosing M much smaller than p "can significantly reduce the variance of the fitted coefficients". M = p with independent Z_m is just least squares.
+
+### 6.3.1 Principal Components Regression (pp. 254-260)
+
+- First principal component direction = that "along which the observations vary the most"; equivalently the line "as close as possible to the data". Example (pop, ad; 100 cities): (6.19) `Z1 = 0.839 × (pop − pop-bar) + 0.544 × (ad − ad-bar)`, loadings constrained by phi_11^2 + phi_21^2 = 1; (6.20) scores z_i1 (examples −26.1 and 18.7). Second component `Z2 = 0.544 × (pop − pop-bar) − 0.839 × (ad − ad-bar)`: uncorrelated with Z1, i.e. orthogonal direction, largest variance subject to that.
+- PCR: regress Y on the first M components. Assumption: "the directions in which X1, ..., Xp show the most variation are the directions that are associated with Y. While this assumption is not guaranteed to be true, it often turns out to be a reasonable enough approximation".
+- Simulations (Figures 6.18, 6.19; n = 50, p = 45): bias falls and variance rises with M (U-shaped MSE); PCR with a good M beats least squares, but on the data of Figures 6.8/6.9 it "does not perform as well as the two shrinkage methods". When the response depends only on the first five components, MSE has a clear minimum at M = 5 and "PCR and ridge regression slightly outperform the lasso".
+- Not feature selection (p. 259): each component "is a linear combination of all p of the original features". "PCR is more closely related to ridge regression than to the lasso ... One can even think of ridge regression as a continuous version of PCR!" (footnote 8 points to *The Elements of Statistical Learning*, Section 3.5).
+- M is "typically chosen by cross-validation". Credit: lowest CV error at M = 10, "almost no dimension reduction at all" (M = 11 is least squares).
+- Standardize each predictor with (6.6) before computing components; otherwise "the high-variance variables will tend to play a larger role". Exception: variables all in the same units.
+
+### 6.3.2 Partial Least Squares (pp. 260-262)
+
+- PCR's directions are found "in an unsupervised way"; "there is no guarantee that the directions that best explain the predictors will also be the best directions to use for predicting the response."
+- PLS is supervised. First direction: after standardizing, set each phi_j1 to the coefficient of the simple regression of Y on X_j (proportional to their correlation), so PLS "places the highest weight on the variables that are most strongly related to the response". Later directions: regress each variable on Z1, take residuals, repeat. Then least squares on Z1, ..., ZM.
+- M chosen by cross-validation; "We generally standardize the predictors and response before performing PLS."
+- Verdict (p. 262): "In practice it often performs no better than ridge regression or PCR. While the supervised dimension reduction of PLS can reduce bias, it also has the potential to increase variance, so that the overall benefit of PLS relative to PCR is a wash."
+
+## 6.4 Considerations in High Dimensions (pp. 262-267)
+
+### 6.4.1 High-Dimensional Data (pp. 262-263)
+
+- Low-dimensional: n much greater than p. High-dimensional: more features than observations (examples: n about 200 with p about 500,000 SNPs; bag-of-words with n about 1,000).
+- "the considerations that we will now discuss certainly also apply if p is slightly smaller than n, and are best always kept in mind when performing supervised learning."
+
+### 6.4.2 What Goes Wrong in High Dimensions? (pp. 263-265)
+
+- "The same concepts apply to logistic regression, linear discriminant analysis, and other classical statistical approaches."
+- When p >= n: "regardless of whether or not there truly is a relationship between the features and the response, least squares will yield a set of coefficient estimates that result in a perfect fit to the data, such that the residuals are zero." (Figure 6.22: two points, one line.) "when p > n or p ≈ n, a simple least squares regression line is too flexible and hence overfits the data."
+- Figure 6.23 (n = 20, 1 to 20 features "completely unrelated to the response"): R2 rises to 1, training MSE falls to 0, test MSE "becomes extremely large". "someone who carelessly examines only the R2 or the training set MSE might erroneously conclude that the model with the greatest number of variables is best."
+- "the Cp, AIC, and BIC approaches are not appropriate in the high-dimensional setting, because estimating sigma^2-hat is problematic"; adjusted R2 can easily reach 1.
+
+### 6.4.3 Regression in High Dimensions (pp. 265-266)
+
+- Forward stepwise, ridge, lasso and PCR "are particularly useful" because they are less flexible than least squares.
+- Figure 6.24 (lasso, n = 100, p = 20, 50, 2,000, of which 20 are truly associated): three points: "(1) regularization or shrinkage plays a key role in high-dimensional problems, (2) appropriate tuning parameter selection is crucial for good predictive performance, and (3) the test error tends to increase as the dimensionality of the problem (i.e. the number of features or predictors) increases, unless the additional features are truly associated with the response."
+- Curse of dimensionality: "the test set MSE almost doubles as p increases from 20 to 2,000." Noise features "increase the dimensionality of the problem, exacerbating the risk of overfitting (since noise features may be assigned nonzero coefficients due to chance associations with the response on the training set) without any potential upside". Even relevant features can hurt: "the variance incurred in fitting their coefficients may outweigh the reduction in bias that they bring."
+
+### 6.4.4 Interpreting Results in High Dimensions (pp. 266-267)
+
+- Multicollinearity is extreme: "any variable in the model can be written as a linear combination of all of the other variables in the model ... we can never know exactly which variables (if any) truly are predictive of the outcome".
+- A selected model is "simply one of many possible models", and "must be further validated on independent data sets". Another data set would likely give "a different, and perhaps even non-overlapping, set" of features.
+- Reporting rule: "one should never use sum of squared errors, p-values, R2 statistics, or other traditional measures of model fit on the training data as evidence of a good model fit in the high-dimensional setting." "It is important to instead report results on an independent test set, or cross-validation errors."
+
+## 6.5 Lab: Linear Models and Regularization Methods (pp. 267-282)
+
+Hitters data: Salary missing for 59 players; after `dropna()` the shape is (263, 20); 19 predictors.
+
+- Forward selection with Cp (pp. 268-270): custom negative-Cp scorer, sigma^2 estimated from the full model. Scoring by MSE selects all 19 variables; scoring by Cp selects 10 (Assists, AtBat, CAtBat, CRBI, CRuns, CWalks, Division, Hits, PutOuts, Walks).
+- Forward selection with validation and CV (pp. 270-272): full path of 20 models including the null model. "the in-sample MSE improves each step we take, indicating we must use either the validation or cross-validation approach to select the number of steps." 5-fold CV with the selection redone in each fold (the p. 271 rule quoted above). Standard error of the CV mean: `cv_mse.std(1) / np.sqrt(K)`, plotted as error bars; footnote 9: "The estimate is crude because the five error estimates are based on overlapping training sets, and hence are not independent." "the validation set approach does not provide standard errors."
+- Best subset with `l0bnb` (pp. 272-273): a path with the subset size as a penalty rather than a constraint.
+- Ridge (pp. 273-279): `skl.ElasticNet` with `l1_ratio=0`; "It is good practice to standardize the columns of X in these applications, if the variables are measured in different units." lambda is called `alpha` in sklearn. Grid `10**np.linspace(8, -2, 100) / Y.std()`, "essentially covering the full range of scenarios from the null model containing only the intercept, to the least squares fit". At lambda = 25.535 the l2 norm of the standardized coefficients is 24.17; at lambda = 0.2437 it is 160.4237. `Pipeline([('scaler', ...), ('ridge', ...)])` separates normalization from fitting.
+  - "Choosing an a priori value of lambda for ridge regression is difficult if not impossible." Validation-set MSE: 134214.0 at lambda = 0.01; 231788.32 at lambda = 1e10 (the intercept-only model).
+  - `GridSearchCV` with a validation split selects alpha = 0.005899; with 5-fold CV via `ElasticNetCV` the minimum is at 1.19e-02 with CV MSE 115526.71. (The text then says this is "a further improvement over the test MSE that we got using lambda = 4"; no lambda = 4 fit appears earlier in this lab, so that sentence looks like a leftover.) All 19 ridge coefficients are non-zero.
+  - Nested estimate (p. 278): outer 75/25 split, inner 5-fold CV: test MSE 132393.84, noticeably higher than the 115526.71 CV minimum that was used for selection.
+- Lasso (pp. 279-280): `ElasticNetCV(n_alphas=100, l1_ratio=1, cv=kfold)`; selected alpha 3.147; minimum CV MSE 114690.73; "6 of the 19 coefficient estimates are exactly zero", leaving 13 variables.
+- PCR (pp. 280-282): pipeline scaler, PCA, linear regression; components chosen by `GridSearchCV`. Smallest CV error at 17 components, but "roughly the same when only one component is included". Null model CV MSE 204139.31. Variance explained: 38.31 % (M = 1), an additional 21.84 % (M = 2), total 60.15 %; 88.63 % by M = 6.
+- PLS (p. 282): `PLSRegression(n_components=2, scale=True)`; CV error minimized at 12, "though there is little noticable difference between this point and a much lower number like 2 or 3 components".
+
+## 6.6 Exercises (pp. 283-288, skimmed)
+
+- (1) training versus test RSS for best subset, forward and backward stepwise; nesting properties. (2) lasso and ridge are less flexible than least squares and help "when its increase in bias is less than its decrease in variance". (3), (4) behaviour of training RSS, test RSS, variance, squared bias and irreducible error as s or lambda increases. (5) ridge versus lasso with identical predictors. (6) verify (6.14) and (6.15). (7) Bayesian derivation of lasso (double-exponential prior) and ridge (normal prior).
+- Applied: (8) forward/backward stepwise and lasso on simulated polynomial data; (9) College data, least squares versus ridge, lasso, PCR, PLS on a test set; (10) training versus test error as features are added (p = 20, n = 1,000, 100 for training); (11) Boston crime rate, with the instruction to evaluate "using validation set error, cross-validation, or some other reasonable alternative, as opposed to using training error".
+
+## Application to Qaf-ft (Chapter 6)
+
+1. Count the effective sample size before adding verifier features. The relevant n is not the number of words. It is closer to the number of independent speakers, and for the mistake class the number of real mistake examples. Once neighbouring-word context, per-phoneme statistics, interactions or embedding dimensions are added, p can approach that n, which is the regime of §6.4.2 ("if p is slightly smaller than n" the same cautions apply). Figure 6.23's lesson applies directly: features with no relation to mistakes will still raise training-set detection and still lower real performance.
+
+2. L2 (ridge) regularization of the verifier. Use ridge-penalized logistic regression as the default fit.
+   - It is the right tool when "the least squares estimates have high variance" (few real mistakes, correlated features), and it fixes the separation instability noted on p. 146.
+   - The verifier's features are few and most of them carry signal, which is the situation in which "Ridge regression will perform better" (p. 248). They are also strongly correlated; ridge "tends to give similar coefficient values to correlated variables" whereas the lasso may pick one arbitrarily (exercise 5).
+   - Standardize every feature first (6.6); otherwise the penalty depends on units (seconds versus milliseconds for duration, nats versus bits for entropy).
+   - Do not penalize the intercept (p. 241). In the verifier the intercept carries the base rate of mistakes; shrinking it would bias every probability.
+   - In sklearn's `LogisticRegression`, the default C = 1 already applies a ridge-type penalty and a very large C removes it (lab p. 187). Treat C as a tuning parameter chosen by speaker-grouped CV, not as a default.
+
+3. L1 (lasso) for feature screening. Use the lasso when a large pool of candidate features is added of which only a few are expected to matter (context windows, per-phoneme features), which is the Figure 6.9 situation. It returns a sparse verifier that is easier to audit and cheaper on-device. Cautions: with correlated features the selected set is unstable ("simply one of many possible models", p. 267), so do not read meaning into which of two correlated features survived; and the selection must be redone inside every training fold. Decide between ridge and lasso by cross-validation, as the book prescribes (p. 248). `ElasticNet` with an intermediate `l1_ratio` is the hybrid the lab mentions.
+
+4. Link to weight decay in the neural acoustic model. The ridge penalty lambda × sum of squared coefficients (6.5) is the same L2 penalty that is added to a neural network's objective; the book does this in Chapter 10 (eq. 10.31, §10.7.2, p. 430, outside the range read for these notes, checked only for this cross-reference), where the weight matrices are penalized and the output-layer biases are not, mirroring the unpenalized intercept. "Weight decay" is the usual deep-learning name for this penalty (the term is not used in ISLP). What carries over from Chapter 6:
+   - It trades a little bias for a large variance reduction, most valuable when parameters far outnumber observations, which is the case when a large pretrained CTC model is fine-tuned on a small corpus.
+   - Bayesian reading (p. 251): a zero-mean Gaussian prior on the weights. For fine-tuning, a prior centered on the pretrained weights rather than on zero is arguably the better match (Extension, not in ISLP).
+   - lambda has no a priori value ("difficult if not impossible", p. 276). Tune it on speaker-disjoint validation data, never on training loss, which always prefers lambda = 0.
+   - Ridge depends on feature scale; in a network the analogous point is that the effective strength of one weight-decay value differs across layers with different scales or normalization (Extension).
+
+5. Choosing lambda (§6.2.3 and lab). Log-spaced grid from "null model" to "unpenalized fit"; speaker-grouped k-fold CV with scaler and model in one pipeline so that standardization "is carried out on each fold"; plot the CV curve with standard-error bars; refit on all development data at the chosen lambda. If the curve is flat (as in Figure 6.12), the exact value does not matter and the choice should lean toward more regularization. Remember the lab's nested result: the CV score at the selected lambda (115526.71) was better than the honest outer test score (132393.84); the same optimism will apply to a verifier's CV score at its selected lambda and threshold.
+
+6. One-standard-error rule for picking the simpler model (p. 240; lab p. 272). For each candidate verifier (number of features, lambda, with or without context features) compute the per-fold CV error, its mean and SE = standard deviation across folds / sqrt(K). Take the best mean, add one SE, and choose the simplest candidate under that line: fewest features, or the largest lambda (the latter is the Extension noted in §6.2.3). Rationale in the book: when models "appear to be more or less equally good, then we might as well choose the simplest". For Qaf-ft simpler also means fewer ways to produce a surprising false flag. Caveat from footnote 9: the fold-based SE is "crude" because folds share training data; with grouped folds it is still the practical yardstick.
+
+7. Subset selection for the verifier. With around 10 candidate features best subset is feasible (about 1,000 models) but the search itself overfits ("The larger the search space, the higher the chance of finding models that look good on the training data", p. 233). Use the deviance, not accuracy or RSS, to rank logistic models of the same size (p. 232), and cross-validation to choose the size. Prefer CV over AIC/BIC here: the criteria rest on large-n asymptotics and an independent-observations n, and with correlated words it is unclear what n to put in log(n) (Extension). Never choose by training-set fit, which always picks the largest model.
+
+8. PCR and PLS: when they would matter. They are relevant only if high-dimensional inputs are fed to the verifier, for example pooled hidden-state embeddings of the acoustic model with several hundred dimensions against a few hundred real mistakes. Then PCA followed by logistic regression (standardize first; M chosen by grouped CV) or ridge on the raw embedding are the book's options. Cautions: PCA directions are unsupervised and need not be the directions that separate mistakes from correct recitation (p. 260); PCR does not select features (p. 259); PLS "often performs no better than ridge regression or PCR" (p. 262). For the small hand-built feature set, none of this is needed.
+
+9. High-dimensional reporting discipline (§6.4.4) applies to the whole system. The acoustic model has vastly more parameters than there are labelled clips, so training-set loss, training WER and training-set verifier accuracy say nothing about quality ("this provides absolutely no evidence of a compelling model"). Only speaker-disjoint held-out or cross-validated numbers are reportable. Feature-importance stories should be worded as "one of many possible models" and rechecked on independent data.
+
+10. Adding features is not free (§6.4.3). Each proposed feature must earn its place in grouped CV at the operating point (detection rate at the fixed false-flag rate). "Even if they are relevant, the variance incurred in fitting their coefficients may outweigh the reduction in bias that they bring."
+
+---
+
+# Cross-chapter checklist for Qaf-ft
+
+1. Define positives as mistakes; report FP/N (false-flag rate), TP/P (detection rate), precision, the confusion matrix and the null rate. Never accuracy alone (§4.4.2; Tables 4.4-4.7).
+2. Fix the false-flag rate first, derive the threshold from held-out scores of correct words, then read off the detection rate (§4.4.2, Figure 4.8).
+3. Verifier = ridge-penalized logistic regression on standardized features, LDA as a check, no naive Bayes on correlated features (§4.4, §4.5, §6.2).
+4. Watch the intercept/base rate when synthetic errors change the class mix (pp. 141, 149).
+5. Check for confounding by data source, tempo, word length and speaker before interpreting any coefficient (§4.3.4).
+6. Split by speaker everywhere; keep derived synthetic clips with their source (Chapter 5, Extension).
+7. Put scaling, selection, lambda, calibration and threshold inside the CV loop; keep one untouched speaker-disjoint test set (pp. 231, 239, 271, 278).
+8. k = 5 or 10 grouped folds; repeat to see Monte Carlo spread, but take confidence intervals from a speaker-level bootstrap with B = 1,000 (§5.1.4, §5.2, p. 220).
+9. Choose model size and lambda by CV with the one-standard-error rule; prefer the simpler model when curves are flat (p. 240, p. 252).
+10. Report only held-out numbers; training-set fit is not evidence (§6.4.4).
