@@ -27,7 +27,7 @@ cells = [
          "REPO = 'obadx/muaalem-annotated-v3'\n"
          "files = [s['rfilename'] for s in requests.get(f'https://huggingface.co/api/datasets/{REPO}').json()['siblings']]\n"
          "by = collections.defaultdict(list)\n"
-         "for f in files:\n    if f.startswith('moshaf_') and f.endswith('.parquet'): by[f.split('/')[0]].append(f)\n"
+         "for f in files:\n    if f.startswith('moshaf_') and f.endswith('.parquet') and 'metadata' not in f: by[f.split('/')[0]].append(f)\n"
          "for m, fs in sorted(by.items()):\n"
          "    p = hf_hub_download(REPO, sorted(fs)[-1], repo_type='dataset', local_dir='/kaggle/temp/data')\n"
          "    print(m, os.path.getsize(p) // 2**20, 'MB')"),

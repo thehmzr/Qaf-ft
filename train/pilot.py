@@ -33,6 +33,8 @@ class Segments(torch.utils.data.Dataset):
         self.vocab, self.items = vocab, []
         for f in files:
             pf = pq.ParquetFile(f)
+            if "start_span" not in pf.schema_arrow.names or "phonemes" not in pf.schema_arrow.names:
+                continue
             for rg in range(pf.num_row_groups):
                 t = pf.read_row_group(rg, columns=["start_span", "duration_seconds", "phonemes"]).to_pylist()
                 for i, r in enumerate(t):
