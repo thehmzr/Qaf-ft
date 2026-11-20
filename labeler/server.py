@@ -13,6 +13,7 @@ from urllib.parse import parse_qs, urlparse
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 from qafft.phonetic import ayah_sites, ayah_tokens, ayah_uthmani
+from qafft import quran_text
 from qafft.tajweed_text import COLOURS, NAMES, ORDER, coloured_words
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -82,9 +83,9 @@ class Handler(BaseHTTPRequestHandler):
                                        rules=[dict(id=r, name=NAMES[r], colour=COLOURS[r]) for r in ORDER]))
         if u.path == "/ayah":
             s, a = int(q["s"][0]), int(q["a"][0])
-            text = ayah_uthmani(s, a)
-            return self.send(200, dict(sura=s, aya=a, words=text.split(), tokens=ayah_tokens(s, a), sites=ayah_sites(s, a),
-                                       coloured=coloured_words(text.split())))
+            words = quran_text.words(s, a) or ayah_uthmani(s, a).split()
+            return self.send(200, dict(sura=s, aya=a, words=words, tokens=ayah_tokens(s, a), sites=ayah_sites(s, a),
+                                       coloured=coloured_words(words)))
         if u.path == "/list":
             items = []
             for f in sorted(os.listdir(DATA)):
@@ -145,6 +146,11 @@ def main():
     a = ap.parse_args()
     DATA = a.data
     os.makedirs(DATA, exist_ok=True)
+    if not quran_text.available():
+        try:
+            quran_text.fetch()
+        except SystemExit as e:
+            print("using the built-in text:", e)
     print(f"labelling tool on http://localhost:{a.port}  (saving to {DATA})")
     ThreadingHTTPServer(("127.0.0.1", a.port), Handler).serve_forever()
 

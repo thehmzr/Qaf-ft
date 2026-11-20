@@ -231,7 +231,8 @@ _CLUSTER = re.compile("\u0640[\u064b-\u0650]?\u0654|.", re.S)
 
 def coloured_words(words):
     """For display: each word as a list of [text, rule or None] pieces, text unchanged."""
-    L, tags = letter_rules(words)
+    # some editions write the sukun as U+06E1; the rules expect U+0652
+    L, tags = letter_rules([w.replace("\u06e1", "\u0652") for w in words])
     out, k = [], 0
     for w, text in enumerate(words):
         pieces = []
