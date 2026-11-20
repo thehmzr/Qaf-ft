@@ -62,3 +62,28 @@ def build_vocab(path):
     vocab = sorted(seen, key=lambda t: (t[0], len(t), t))
     json.dump({"tokens": vocab, "counts": seen}, open(path, "w"), ensure_ascii=False, indent=0)
     return vocab
+
+
+MADD = {"ا": "alif", "ۥ": "waw", "ۦ": "ya"}
+
+
+def ayah_sites(sura: int, aya: int, moshaf=None):
+    """Named tajweed places in an ayah, in recitation order.
+
+    Each site: kind (madd / ghunnah / qalqalah), expected length in counts where
+    it applies, and the index of the spoken group it falls in. Groups follow the
+    phonetic script's own spacing, which mostly matches the written words.
+    """
+    from quran_transcript import quran_phonetizer
+    ph = quran_phonetizer(ayah_uthmani(sura, aya), moshaf or default_moshaf(), remove_spaces=False).phonemes
+    sites = []
+    for g, group in enumerate(ph.split()):
+        for ch, grp in groupby(group):
+            n = len(list(grp))
+            if ch in MADD and n >= 2:
+                sites.append(dict(kind="madd", letter=MADD[ch], counts=n, group=g, text=group))
+            elif (ch == "ن" and n >= 3) or (ch == "م" and n >= 3) or ch in "ں۾":
+                sites.append(dict(kind="ghunnah", counts=n, group=g, text=group))
+            elif ch == "ڇ":
+                sites.append(dict(kind="qalqalah", group=g, text=group))
+    return sites

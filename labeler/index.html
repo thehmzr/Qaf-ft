@@ -63,17 +63,33 @@ td,th{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left}
     <p class="note">Leave all words unmarked if the recitation was correct. Correct clips matter as much as wrong ones.</p>
   </div>
   <div class="card">
+    <h2>4. Tajweed places</h2>
+    <div id="sites"></div>
+    <div class="row"><input type="checkbox" id="natural"><label for="natural">Also show natural 2-count madd</label></div>
+    <p class="note">Each place is set to "as expected". Change only the ones that were recited differently.</p>
+  </div>
+  <div class="card">
+    <h2>5. Is the clip usable?</h2>
+    <div class="row"><label for="kind">Clip</label><select id="kind"></select></div>
+    <p class="note">Choose something other than "usable" when the recording stops early, is a different ayah, runs over several ayahs, or is noise. Those clips are kept apart from mistakes.</p>
+  </div>
+  <div class="card">
     <div class="row">
       <button id="save" class="primary" disabled>Save label</button>
       <span id="status"></span>
     </div>
+  </div>
+  <div class="card">
+    <h2>Consistency check</h2>
+    <div class="row"><button id="control">Label an earlier clip again</button><span id="ctl" class="note"></span></div>
+    <p class="note" id="stats">Loads one of your earlier clips without showing its first label. Agreement between the two labellings shows how steady the labels are.</p>
   </div>
   <div class="card"><h2>Saved so far</h2><div id="list"></div></div>
 </main>
 <script>
 (function(){
   var $=function(i){return document.getElementById(i)};
-  var meta=null, ayah=null, marks={}, wav=null, recorder=null, chunks=[];
+  var meta=null, ayah=null, marks={}, wav=null, recorder=null, chunks=[], siteVal={}, repeatOf=null;
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
   function status(t,k){var s=$("status");s.textContent=t;s.className=k||""}
   function refreshSave(){$("save").disabled=!(ayah&&wav)}
@@ -82,10 +98,22 @@ td,th{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left}
     $("marks").innerHTML=Object.keys(marks).map(Number).sort(function(a,b){return a-b}).map(function(i){
       return '<div class="mark"><b>'+esc(ayah.words[i])+'</b><label for="t'+i+'">Mistake</label><select id="t'+i+'" data-i="'+i+'" data-f="type">'+meta.mistakes.map(function(m){return '<option'+(marks[i].type===m?' selected':'')+'>'+esc(m)+'</option>'}).join("")+'</select><label for="h'+i+'">What was said</label><input type="text" id="h'+i+'" data-i="'+i+'" data-f="heard" value="'+esc(marks[i].heard||"")+'" style="direction:rtl;width:160px"></div>'}).join("");
   }
+  function siteOptions(x){
+    if(x.kind==="madd")return ["as expected","1 count","2 counts","3 counts","4 counts","5 counts","6 counts","longer than 6"];
+    return ["as expected","missing","too short","too long"];
+  }
+  function drawSites(){
+    var show=ayah.sites.map(function(x,i){return {x:x,i:i}}).filter(function(o){return $("natural").checked||!(o.x.kind==="madd"&&o.x.counts===2)});
+    $("sites").innerHTML=show.length?show.map(function(o){var x=o.x,i=o.i;
+      var name=x.kind==="madd"?"Madd ("+x.letter+"), "+x.counts+" counts":x.kind==="ghunnah"?"Ghunnah":"Qalqalah";
+      return '<div class="mark"><b>'+esc(ayah.words.length===ayah.groups?ayah.words[x.group]:x.text)+'</b><label for="s'+i+'">'+name+'</label><select id="s'+i+'" data-s="'+i+'">'+siteOptions(x).map(function(v){return '<option'+((siteVal[i]||"as expected")===v?' selected':'')+'>'+v+'</option>'}).join("")+'</select></div>'}).join(""):'<p class="note">No lengthened madd, ghunnah or qalqalah in this ayah.</p>';
+  }
+  $("sites").addEventListener("change",function(e){if(e.target.dataset.s)siteVal[+e.target.dataset.s]=e.target.value});
+  $("natural").onchange=function(){if(ayah)drawSites()};
   async function loadAyah(){
     var s=+$("sura").value,a=+$("aya").value;
     if(meta&&(s<1||s>114||a<1||a>meta.sizes[s-1])){status("That ayah does not exist. Sura "+s+" has "+(meta.sizes[s-1]||0)+" ayahs.","err");return}
-    var r=await fetch("/ayah?s="+s+"&a="+a);ayah=await r.json();marks={};drawWords();status("");refreshSave();
+    var r=await fetch("/ayah?s="+s+"&a="+a);ayah=await r.json();ayah.groups=ayah.sites.reduce(function(m,x){return Math.max(m,x.group+1)},0)<=ayah.words.length?ayah.words.length:-1;marks={};siteVal={};$("kind").value="usable";drawWords();drawSites();status("");refreshSave();
   }
   $("words").addEventListener("click",function(e){var b=e.target.closest(".word");if(!b)return;var i=+b.dataset.i;if(marks[i])delete marks[i];else marks[i]={type:meta.mistakes[0],heard:""};drawWords()});
   $("marks").addEventListener("change",function(e){var t=e.target;if(t.dataset.f)marks[+t.dataset.i][t.dataset.f]=t.value});
@@ -120,11 +148,14 @@ td,th{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left}
   };
   $("save").onclick=async function(){
     var list=Object.keys(marks).map(Number).sort(function(a,b){return a-b}).map(function(i){return {word:i,text:ayah.words[i],type:marks[i].type,heard:marks[i].heard}});
-    var label={sura:ayah.sura,aya:ayah.aya,words:ayah.words,reciter:$("reciter").value.trim(),verdict:list.length?"mistake":"correct",marks:list};
+    var sites=ayah.sites.map(function(x,i){return {kind:x.kind,group:x.group,expected:x.counts||null,heard:siteVal[i]||"as expected"}});
+    var off=sites.filter(function(x){return x.heard!=="as expected"}).length, kind=$("kind").value;
+    var label={sura:ayah.sura,aya:ayah.aya,words:ayah.words,reciter:$("reciter").value.trim(),clip_kind:kind,verdict:kind!=="usable"?"unusable":(list.length||off)?"mistake":"correct",marks:list,sites:sites};
+    if(repeatOf)label.repeat_of=repeatOf;
     var j=new TextEncoder().encode(JSON.stringify(label)), head=new Uint8Array(4);new DataView(head.buffer).setUint32(0,j.length);
     $("save").disabled=true;
     try{var r=await fetch("/save",{method:"POST",body:new Blob([head,j,wav])});var d=await r.json();
-      if(!r.ok)throw new Error(d.error);status("Saved as "+d.id,"ok");wav=null;$("player").hidden=true;$("file").value="";marks={};drawWords();showList()}
+      if(!r.ok)throw new Error(d.error);status("Saved as "+d.id,"ok");repeatOf=null;$("ctl").textContent="";siteVal={};drawSites();$("kind").value="usable";wav=null;$("player").hidden=true;$("file").value="";marks={};drawWords();showList();showStats()}
     catch(e){status("Not saved: "+e.message,"err")}
     refreshSave();
   };
@@ -132,7 +163,18 @@ td,th{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left}
     var d=await (await fetch("/list")).json(), ok=d.filter(function(x){return x.verdict==="correct"}).length;
     $("list").innerHTML=d.length?'<p class="note">'+d.length+' clips: '+ok+' correct, '+(d.length-ok)+' with mistakes.</p><table><tr><th>Ayah</th><th>Verdict</th><th>Marked words</th><th>Saved</th></tr>'+d.slice(-8).reverse().map(function(x){return '<tr><td>'+x.sura+':'+x.aya+'</td><td>'+esc(x.verdict)+'</td><td>'+x.marks+'</td><td>'+esc(x.saved)+'</td></tr>'}).join("")+'</table>':'<p class="note">Nothing saved yet.</p>';
   }
-  fetch("/meta").then(function(r){return r.json()}).then(function(m){meta=m;loadAyah();showList()});
+  $("control").onclick=async function(){
+    var d=await (await fetch("/control")).json();
+    if(d.none){$("ctl").textContent="Save "+d.need+" more clips first.";return}
+    $("sura").value=d.sura;$("aya").value=d.aya;await loadAyah();
+    repeatOf=d.id;await setAudio(await (await fetch("/audio?id="+encodeURIComponent(d.id))).blob());
+    $("ctl").textContent="Loaded an earlier clip of "+d.sura+":"+d.aya+". Label it as if new.";
+  };
+  async function showStats(){
+    var d=await (await fetch("/stats")).json();
+    if(d.pairs)$("stats").textContent=d.pairs+" clips labelled twice: same verdict on "+Math.round(100*d.same_verdict)+"%, marked words overlap "+Math.round(100*d.word_overlap)+"%.";
+  }
+  fetch("/meta").then(function(r){return r.json()}).then(function(m){meta=m;$("kind").innerHTML=m.clip_kinds.map(function(k){return "<option>"+esc(k)+"</option>"}).join("");loadAyah();showList();showStats()});
 })();
 </script>
 </body>
