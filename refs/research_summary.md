@@ -73,3 +73,21 @@ IqraEval, Tadabur, QUA, Quran-Lab data are non-commercial or forbid paid feature
 checkpoints carry extra conditions (no ads, free-access path); Tanzil text needs attribution.
 No open set has real, word-located mistakes across the full Quran: an own expert-labelled
 test set is needed for a trustworthy false-flag number.
+
+## Kaggle / Zenodo / Mendeley check (direct access, 2026-11-20)
+Kaggle (84 hits read, 12 descriptions read):
+- ahedya/labeled-quran-dataset: Al-Fatiha split word by word, ~175-220 different reciters per word
+  (762 MB, custom licence). Useful for word-level alignment tests and speaker variety.
+- alawdisoft/tajweed-dataset: clips by noon-sakinah rule (ikhfa/izhar/idgham/iqlab) per sheikh, CC0, 1 GB.
+- abdelmonemhatem/tts-mispronunciation-detection: 2,000 recordings, 16 speakers, expected vs
+  realized phonemes with timings, 1,219 correct / 781 with errors, speaker-independent splits (not Quran).
+- abdelrhmansalah22/arabic-speech-mispronunciation-detection-dataset: 100 Egyptian children (2-8 y),
+  top-100 words, expert segmental error labels, CC0 (not Quran; child speech).
+- Isolated letters: alharthalhajhussein (1,439 clips, 28 letters), mazinali1990 (1 s clips),
+  jabirmuktabir hijaiyah-fathah (Apache-2.0), amnaasif/arabic-short-vowels-audio-dataset (referenced).
+- abdo3id/female-quran-recitation (205 MB, licence unknown): rare female voices.
+- abdullahkhansherwani/muaalem-stage: 87 GB Kaggle copy of the muaalem data (handy for Kaggle training).
+- atique/qaida-dataset is Urdu OCR images, not audio.
+Zenodo: nothing with mistake labels; 5879098 "Qur'anic Recitation Styles and Reciters" (27 GB, CC-BY) is style classification.
+Mendeley: Surah Al-Ikhlas Error Detection Dataset confirmed at source: 1,506 records, labelled by 5 Quran experts, CC BY 4.0.
+Still true: no dataset with word-located real mistakes across the full Quran.
