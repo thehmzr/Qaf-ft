@@ -2,6 +2,6 @@
 models/
 data/
 jobs/
-refs/islp_*
+refs/
 bench/out/
 __pycache__/
