@@ -144,6 +144,7 @@ def main():
     ap.add_argument("--head-lr", type=float, default=1e-3)
     ap.add_argument("--eval-every", type=int, default=500)
     ap.add_argument("--smoke", action="store_true")
+    ap.add_argument("--amp", action="store_true", help="mixed precision; off by default, it produced NaN losses")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     random.seed(0); torch.manual_seed(0)
@@ -179,7 +180,8 @@ def main():
                              {"params": head, "lr": a.head_lr}], weight_decay=1e-3)
     warm = 300
     sched = torch.optim.lr_scheduler.LambdaLR(opt, lambda s: min(1.0, (s + 1) / warm))
-    scaler = torch.amp.GradScaler(dev, enabled=dev == "cuda")
+    use_amp = a.amp and dev == "cuda"
+    scaler = torch.amp.GradScaler(dev, enabled=use_amp)
     ctc = nn.CTCLoss(blank=blank, zero_infinity=True)
     step, best = 0, 1e9
     last = os.path.join(a.out, "last.pt")
@@ -190,13 +192,19 @@ def main():
         print("resumed at step", step, flush=True)
 
     model.train()
-    t0, run = time.time(), 0.0
+    t0, run, bad = time.time(), 0.0, 0
     while step < a.steps:
         for n, (wav, wl, ids, il) in enumerate(tl):
             wav = augment(wav, wl)
-            with torch.autocast(dev, enabled=dev == "cuda"):
+            with torch.autocast(dev, enabled=use_amp):
                 lp, hl = model(wav.to(dev), wl.to(dev), train=True)
             loss = ctc(lp.float().transpose(0, 1), ids.to(dev), hl, il.to(dev)) / a.accum
+            if not torch.isfinite(loss):
+                bad += 1
+                opt.zero_grad(set_to_none=True)
+                if bad > 50:
+                    raise SystemExit("loss is not finite for 50 batches; stopping")
+                continue
             scaler.scale(loss).backward()
             run += loss.item() * a.accum
             if (n + 1) % a.accum:
