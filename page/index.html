@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qaf-ft Control Room</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Reem+Kufi:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* layout: one column; stage rail, count strip, then a ledger of jobs grouped by state */
+  --paper:#f2f5f4; --surface:#ffffff; --ink:#13201f; --muted:#5a6866; --line:#d6dedc;
+  --accent:#0b6e6a; --accent-soft:#d9eeec;
+  --good:#1d7a45; --warn:#9a5a00; --crit:#b3261e; --idle:#63688a;
+  --font-display:"Reem Kufi","IBM Plex Sans",system-ui,sans-serif;
+  --font-body:"IBM Plex Sans",system-ui,sans-serif;
+  --font-mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0f1716; --surface:#172221; --ink:#e6efed; --muted:#93a3a0; --line:#2a3937;
+    --accent:#4fc4bd; --accent-soft:#17403d;
+    --good:#5bc98a; --warn:#e0a44a; --crit:#f0796f; --idle:#a3a8cf; color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0f1716; --surface:#172221; --ink:#e6efed; --muted:#93a3a0; --line:#2a3937;
+  --accent:#4fc4bd; --accent-soft:#17403d;
+  --good:#5bc98a; --warn:#e0a44a; --crit:#f0796f; --idle:#a3a8cf; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:15px;line-height:1.45}
+main{max-width:920px;margin:0 auto;padding:28px 16px 56px;display:flex;flex-direction:column;gap:22px}
+header{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.mark{width:52px;height:52px;border-radius:14px;background:var(--accent);color:var(--surface);display:grid;place-items:center;font-family:var(--font-display);font-size:30px;font-weight:700;line-height:1;padding-bottom:6px}
+h1{font-family:var(--font-display);font-weight:700;font-size:26px;margin:0;text-wrap:balance}
+.phase{color:var(--muted);margin:2px 0 0}
+.sync{margin-left:auto;font-size:13px;color:var(--muted);text-align:right}
+.sync.stale{color:var(--warn)}
+h2{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:0 0 8px}
+.rail{display:flex;flex-wrap:wrap;gap:6px}
+.step{font-size:13px;padding:5px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--surface)}
+.step.done{color:var(--good);border-color:var(--good)}
+.step.now{color:var(--surface);background:var(--accent);border-color:var(--accent);font-weight:600}
+.counts{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px}
+.count{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.count b{display:block;font-size:22px;font-variant-numeric:tabular-nums;font-weight:600}
+.count span{font-size:13px;color:var(--muted)}
+.jobs{display:flex;flex-direction:column;gap:8px}
+.job{background:var(--surface);border:1px solid var(--line);border-left:5px solid var(--idle);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.job.running{border-left-color:var(--accent)} .job.done{border-left-color:var(--good)}
+.job.failed{border-left-color:var(--crit)} .job.paused{border-left-color:var(--warn)}
+.top{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.name{font-weight:600}
+.kind{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 6px}
+.pill{font-size:12px;font-weight:600;border-radius:999px;padding:1px 9px;margin-left:auto;background:var(--accent-soft);color:var(--accent)}
+.pill.done{color:var(--good)} .pill.failed{color:var(--crit)} .pill.paused{color:var(--warn)} .pill.queued,.pill.stopped{color:var(--idle)}
+.bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);border-radius:4px}
+.meta{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.log{font-family:var(--font-mono);font-size:12px;color:var(--muted);overflow-x:auto;white-space:pre;margin:0}
+.ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{font:inherit;font-size:13px;font-weight:500;padding:5px 12px;border-radius:7px;border:1px solid var(--accent);background:var(--surface);color:var(--accent);cursor:pointer}
+button:hover{background:var(--accent-soft)}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button.danger{border-color:var(--crit);color:var(--crit)}
+button:disabled{opacity:.5;cursor:default}
+.asked{font-size:13px;color:var(--warn)}
+.note{font-size:13px;color:var(--muted);max-width:65ch;margin:0}
+.banner{background:var(--accent-soft);border-radius:10px;padding:10px 14px;font-size:14px}
+.wrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px;background:var(--surface)}
+th,td{border:1px solid var(--line);padding:6px 10px;text-align:left;font-variant-numeric:tabular-nums}
+th{font-size:12px;color:var(--muted);font-weight:600}
+.empty{color:var(--muted);font-size:14px}
+.steps{margin:0;padding-left:20px;font-size:14px;max-width:65ch}
+.steps li{margin:3px 0}
+summary{cursor:pointer}
+.rep p{margin:8px 0 0;font-size:14px;max-width:65ch}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="mark" aria-hidden="true">ق</div>
+    <div><h1>Qaf-ft control room</h1><p class="phase" id="phase">Connecting to job data…</p></div>
+    <div class="sync" id="sync"></div>
+  </header>
+  <div class="banner" id="headline" hidden></div>
+  <section><h2>Your tasks</h2><div class="jobs" id="tasks"></div></section>
+  <section><h2>Reports and briefs</h2><div class="jobs" id="reports"></div></section>
+  <section><h2>Stages</h2><div class="rail" id="rail"></div></section>
+  <section><div class="counts" id="counts"></div></section>
+  <section><h2>Active and queued</h2><div class="jobs" id="active"></div></section>
+  <section><h2>Finished</h2><div class="jobs" id="finished"></div></section>
+  <section><h2 id="resTitle">Results so far</h2><div class="wrap" id="results"></div></section>
+  <section><h2>Your requests</h2><div id="requests"></div>
+    <p class="note" id="how">Buttons queue a request. Claude applies it at its next check-in, usually within a few minutes while jobs are running. For something urgent, comment on this page or message the session.</p></section>
+</main>
+<script>
+(function(){
+  var db=null, canWrite=true, state=null, cmds=[], confirmStop=null, loadTimer=null;
+  var LABEL={pause:"Pause",resume:"Resume",stop:"Stop",restart:"Run again",prioritize:"Run next",done:"Mark as done"};
+  var ASKED={pause:"Pause requested",resume:"Resume requested",stop:"Stop requested",restart:"Run again requested",prioritize:"Run next requested",done:"Marked as done"};
+  function $(id){return document.getElementById(id)}
+  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+  function ago(ms){var m=Math.round((Date.now()-ms)/60000);if(m<1)return "just now";if(m<60)return m+" min ago";var h=Math.floor(m/60);return h+" h "+(m%60)+" min ago"}
+  function left(j){if(j.eta_s==null||!state)return "";var s=j.eta_s-(Date.now()-state.updated_at)/1000;if(s<45)return "finishing";var m=Math.round(s/60);return m<90?"about "+m+" min left":"about "+(m/60).toFixed(1)+" h left"}
+  function pending(id){for(var i=0;i<cmds.length;i++){if(cmds[i].job===id&&cmds[i].status==="pending")return cmds[i]}return null}
+  function jobHtml(j){
+    var pct=j.total?Math.min(100,Math.round(100*j.done/j.total)):null;
+    var h='<div class="job '+esc(j.status)+'"><div class="top"><span class="name">'+esc(j.name)+'</span><span class="kind">'+esc(j.kind)+'</span><span class="pill '+esc(j.status)+'">'+esc(j.status)+'</span></div>';
+    if(pct!=null){h+='<div class="bar"><i style="width:'+pct+'%"></i></div><div class="meta">'+esc(j.done)+' of '+esc(j.total)+' '+esc(j.unit||"")+' · '+pct+'%'+(j.status==="running"&&left(j)?' · '+left(j):'')+'</div>'}
+    if(j.note){h+='<div class="meta">'+esc(j.note)+'</div>'}
+    if(j.log&&j.log.length&&j.status!=="done"){h+='<pre class="log">'+esc(j.log[j.log.length-1])+'</pre>'}
+    var p=pending(j.id), can=j.can||[];
+    if(p){h+='<div class="ctl"><span class="asked">'+esc(ASKED[p.action]||p.action)+' · waiting for Claude’s next check-in</span></div>'}
+    else if(canWrite&&db&&can.length){
+      h+='<div class="ctl">';
+      if(confirmStop===j.id){h+='<span class="meta">Stop this job?</span><button class="danger" data-job="'+esc(j.id)+'" data-act="stop">Yes, stop it</button><button data-cancel="1">Keep it</button>'}
+      else{can.forEach(function(a){h+='<button'+(a==="stop"?' class="danger" data-ask="'+esc(j.id)+'"':' data-job="'+esc(j.id)+'" data-act="'+esc(a)+'"')+'>'+esc(LABEL[a]||a)+'</button>'})}
+      h+='</div>'}
+    return h+'</div>'}
+  function render(){
+    if(!state){return}
+    $("phase").textContent=state.phase||"";
+    var hl=$("headline");hl.hidden=!state.headline;hl.textContent=state.headline||"";
+    var s=$("sync");var stale=Date.now()-state.updated_at>20*60000;s.className="sync"+(stale?" stale":"");s.textContent="Claude last checked in "+ago(state.updated_at);
+    $("rail").innerHTML=(state.stages||[]).map(function(x){return '<span class="step '+esc(x.status||"")+'">'+esc(x.name)+'</span>'}).join("");
+    var jobs=state.jobs||[], c={running:0,queued:0,paused:0,done:0,failed:0};
+    jobs.forEach(function(j){if(c[j.status]!=null)c[j.status]++});
+    $("counts").innerHTML=[["running","Running"],["queued","Queued"],["paused","Paused"],["done","Finished"],["failed","Need attention"]].map(function(k){return '<div class="count"><b>'+c[k[0]]+'</b><span>'+k[1]+'</span></div>'}).join("");
+    var act=jobs.filter(function(j){return ["running","paused","queued"].indexOf(j.status)>=0});
+    var fin=jobs.filter(function(j){return ["running","paused","queued"].indexOf(j.status)<0});
+    $("active").innerHTML=act.length?act.map(jobHtml).join(""):'<p class="empty">Nothing is running right now.</p>';
+    $("finished").innerHTML=fin.length?fin.map(jobHtml).join(""):'<p class="empty">No finished jobs yet.</p>';
+    var tasks=state.tasks||[];
+    $("tasks").innerHTML=tasks.length?tasks.map(function(t){var p=pending(t.id),d=t.status==="done";
+      var h='<div class="job '+(d?"done":"paused")+'"><div class="top"><span class="name">'+esc(t.title)+'</span><span class="pill '+(d?"done":"paused")+'">'+(d?"done":"for you")+'</span></div>';
+      if(t.why){h+='<div class="meta">'+esc(t.why)+'</div>'}
+      if(t.steps&&t.steps.length&&!d){h+='<ol class="steps">'+t.steps.map(function(x){return '<li>'+esc(x)+'</li>'}).join("")+'</ol>'}
+      if(!d){h+=p?'<div class="ctl"><span class="asked">Marked as done · Claude will pick this up at its next check-in</span></div>':(canWrite&&db?'<div class="ctl"><button data-job="'+esc(t.id)+'" data-act="done">Mark as done</button></div>':'')}
+      return h+'</div>'}).join(""):'<p class="empty">Nothing needed from you right now.</p>';
+    var reps=state.reports||[];
+    $("reports").innerHTML=reps.length?reps.map(function(x,i){return '<details class="job"'+(i===0?' open':'')+'><summary><span class="name">'+esc(x.title)+'</span> <span class="meta">'+esc(x.when||"")+'</span></summary><div class="rep">'+(x.points||[]).map(function(y){return '<p>'+esc(y)+'</p>'}).join("")+'</div></details>'}).join(""):'<p class="empty">No reports yet.</p>';
+    var r=state.results;
+    if(r&&r.rows&&r.rows.length){$("resTitle").textContent=r.title||"Results so far";$("results").innerHTML='<table><thead><tr>'+r.columns.map(function(x){return '<th>'+esc(x)+'</th>'}).join("")+'</tr></thead><tbody>'+r.rows.map(function(row){return '<tr>'+row.map(function(x){return '<td>'+esc(x)+'</td>'}).join("")+'</tr>'}).join("")+'</tbody></table>'+(r.caption?'<p class="note">'+esc(r.caption)+'</p>':'')}
+    else{$("results").innerHTML='<p class="empty">Benchmark numbers appear here as each run finishes.</p>'}
+    $("requests").innerHTML=cmds.length?'<div class="wrap"><table><thead><tr><th>When</th><th>Job</th><th>Request</th><th>Status</th></tr></thead><tbody>'+cmds.slice(0,12).map(function(x){return '<tr><td>'+esc(ago(x.at))+'</td><td>'+esc(x.job)+'</td><td>'+esc(LABEL[x.action]||x.action)+'</td><td>'+esc(x.status)+(x.result?' · '+esc(x.result):'')+'</td></tr>'}).join("")+'</tbody></table></div>':'<p class="empty">No requests yet.</p>';
+  }
+  document.addEventListener("click",function(e){
+    var t=e.target.closest("button");if(!t)return;
+    if(t.dataset.ask){confirmStop=t.dataset.ask;render();return}
+    if(t.dataset.cancel){confirmStop=null;render();return}
+    if(t.dataset.job&&db){t.disabled=true;confirmStop=null;
+      db.collection("commands").add({job:t.dataset.job,action:t.dataset.act,at:Date.now(),status:"pending"}).catch(function(){$("how").textContent="That request could not be saved. Check your connection and try again.";render()})}
+  });
+  function fail(msg){$("phase").textContent=msg}
+  async function start(){
+    if(!(window.claude&&window.claude.use)){fail("Job data is only available when this page is opened in Claude.");return}
+    loadTimer=setTimeout(function(){if(!state)fail("The job data can’t be reached yet. It will appear here when the connection returns.")},10000);
+    db=await window.claude.use("db");
+    if(!db){clearTimeout(loadTimer);fail("Sign in to Claude to see the job data.");return}
+    try{var u=await window.claude.use("user");if(u&&u.can){var w=await u.can("data.write");if(w===false)canWrite=false}}catch(e){}
+    db.doc("state/main").onSnapshot(function(snap){clearTimeout(loadTimer);if(snap.exists){state=snap.data();render()}else{fail("No jobs have been reported yet.")}},function(){fail("The job data is not available right now.")});
+    db.collection("commands").orderBy("at","desc").limit(30).onSnapshot(function(q){cmds=q.docs.map(function(d){var x=d.data();return {id:d.id,job:x.job,action:x.action,at:x.at,status:x.status,result:x.result}});render()},function(){});
+    setInterval(render,30000);
+  }
+  start();
+})();
+</script>
+</body>
+</html>
