@@ -30,19 +30,22 @@ Standing commitments that follow from these licences:
 
 | Source | Licence | What it requires | Use here |
 |---|---|---|---|
-| Quran-Lab/quran-tajweed-benchmark | Quran-Lab NPL 1.2 | No charge for the model or any feature it powers; covers models evaluated on it; no redistribution. **Free only** | False-flag test |
-| Quran-Lab/quranic-asr-benchmark | Quran-Lab NPL 1.2 | Same as above. **Free only** | Transcription test |
 | IqraEval/QuranMB.v2 and test answers | CC BY-NC 4.0 | Credit; non-commercial. **Free only** | Sound-level detection score |
 | obadx/qdat_bench | Apache 2.0 | Keep the notice | Tajweed-rule test |
 | Luxbg/quran-muaalem-aligned (unseen reciters split) | MIT | Keep the notice | Held-out reciters |
 | RetaSy/quranic_audio_dataset | None stated | No licence granted, so results are reported but the data is not trained on | Learner test |
 
-## Requested, not yet granted
+## On hold: licences that would set the model's own licence
 
-| Source | Licence | Note |
+These three licences each require a model trained OR merely evaluated on the data to be
+published under that same licence and no other. They exclude one another, so at most one
+of them can ever touch the published model. None is used until that choice is made.
+
+| Source | Licence | What using it would bind |
 |---|---|---|
-| QUD-Technologies/quranic-universal-ayahs | QUA Dataset License 1.0 | Any feature built on it, including through a trained or evaluated model, must be free to all users; no republishing. Read the full text before first use |
-| Quran-Lab/QuranTTS | Quran-Lab non-commercial 2.0 | Not licensed to for-profit organisations; covers trained models. Read the full text before first use |
+| Quran-Lab/quran-tajweed-benchmark, quranic-asr-benchmark | Quran-Lab NPL 1.2 | Model released under NPL 1.2 "with no additional or different terms"; no charge, no ads |
+| QUD-Technologies/quranic-universal-ayahs | QUA Dataset License 1.0 | Model published only under the QUA licence; model card and app must credit "QUD Technologies - Qur'anic Universal Audio (https://qud.dev)"; no republishing of derived data; disclose use on request |
+| Quran-Lab/QuranTTS | Quran-Lab non-commercial 2.0 | Access request was rejected; not available |
 
 ## Not used
 
@@ -53,6 +56,9 @@ Standing commitments that follow from these licences:
 | obadx/muaalem-model-v3_2 (weights) | Extra conditions in the code repository's licence; used here only to test a design, not shipped |
 
 ## Open questions to settle before release
+
+- Tadabur's card adds "for research and educational purposes only", narrower than its CC BY-NC tag.
+- The expert set's paper excludes one mushaf (25.0) for poor segmentation, yet it ships in the data; exclude it from training.
 
 - tlog and RetaSy contain voices of private individuals; consent scope for model training is
   not documented on either page.
