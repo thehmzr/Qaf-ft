@@ -87,3 +87,17 @@ def ayah_sites(sura: int, aya: int, moshaf=None):
             elif ch == "ڇ":
                 sites.append(dict(kind="qalqalah", group=g, text=group))
     return sites
+
+
+def fold_with_groups(phonemes: str):
+    """Like fold(), for a phoneme string that still has spaces. Also returns, for
+    each token, the index of the spoken group (roughly: the word) it starts in."""
+    chars, owner = [], []
+    for g, group in enumerate(phonemes.split()):
+        chars += list(group); owner += [g] * len(group)
+    tokens, groups, i = [], [], 0
+    for ch, grp in groupby(chars):
+        n = len(list(grp))
+        tokens.append(ch if min(n, MAX_RUN) == 1 else f"{ch}{min(n, MAX_RUN)}")
+        groups.append(owner[i]); i += n
+    return tokens, groups

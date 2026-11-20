@@ -1,0 +1,9 @@
+{
+ "summary": {
+  "auc": 0.9417267483777938,
+  "catch_at_5pct": 0.875,
+  "catch_at_1pct": 0.8625,
+  "catch_at_0.1pct": 0.79
+ },
+ "clips": 400
+}

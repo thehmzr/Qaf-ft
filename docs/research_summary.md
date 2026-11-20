@@ -91,3 +91,14 @@ Kaggle (84 hits read, 12 descriptions read):
 Zenodo: nothing with mistake labels; 5879098 "Qur'anic Recitation Styles and Reciters" (27 GB, CC-BY) is style classification.
 Mendeley: Surah Al-Ikhlas Error Detection Dataset confirmed at source: 1,506 records, labelled by 5 Quran experts, CC BY 4.0.
 Still true: no dataset with word-located real mistakes across the full Quran.
+
+## Pilot model as a checker (planted mistakes, one held-out reciter, Juz Amma)
+Command: eval/evaluate.py on 400 clips of a reciter never trained on. Each clip scored against
+its true text and against a text with one planted mistake (text-side, audio unchanged).
+Separation (AUC) 0.942. Wrong words caught at 5% / 1% / 0.1% false flags: 87.5% / 86.3% / 79.0%.
+By kind at 1% false flags: letter 1.00, vowel 1.00, doubling 1.00, ghunnah 0.97, madd 0.68,
+qalqalah 0.00.
+Limits: one reciter, so no interval; mistakes are planted in the text, which is easier than real
+mistakes; expert studio audio. Qalqalah scores zero because the planted mistake removes an
+expected sound, and alignment scoring cannot see a sound that is present in the audio but absent
+from the expected text. Needs a second check against the free decode.
