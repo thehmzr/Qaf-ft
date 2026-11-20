@@ -24,7 +24,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT); sys.path.insert(0, os.path.join(ROOT, "train"))
 from qafft.phonetic import fold_with_groups
 from qafft.mistakes import perturb
-from qafft.verify import group_scores, token_scores
+from qafft.verify import extra_sounds, group_scores, token_scores
 
 
 def auc(pos, neg):
@@ -95,11 +95,19 @@ def main():
         return lp[0, : hl[0]]
 
     def score(lp, toks, grps):
-        ts = token_scores(lp, [vocab[t] for t in toks], blank)
-        return None if ts is None else group_scores(ts, grps)
+        ids = [vocab[t] for t in toks]
+        ts = token_scores(lp, ids, blank)
+        if ts is None:
+            return None
+        # badness per word: the weakest expected sound, or a clear extra sound
+        bad = {g: -v for g, v in group_scores(ts, grps).items()}
+        for g, v in extra_sounds(lp, ids, grps, blank).items():
+            bad[g] = max(bad.get(g, 0.0), v)
+        return bad
 
     by, kinds, n = {}, {}, 0
     for f in a.shards:
+        n = 0                                  # the limit applies to each file
         pf = pq.ParquetFile(f)
         for rg in range(pf.num_row_groups):
             for r in pf.read_row_group(rg, columns=["audio", "phonemes", "start_span", "duration_seconds", "moshaf_id"]).to_pylist():
@@ -120,10 +128,10 @@ def main():
                 if bad is None:
                     continue
                 rows = by.setdefault(r["moshaf_id"], [])
-                rows += [(-v, 0) for v in good.values()]
+                rows += [(v, 0) for v in good.values()]
                 g = p[2]["group"]
-                rows.append((-bad.get(g, min(bad.values())), 1))
-                kinds.setdefault(p[2]["kind"], []).append(-bad.get(g, min(bad.values())))
+                rows.append((bad.get(g, max(bad.values())), 1))
+                kinds.setdefault(p[2]["kind"], []).append(bad.get(g, max(bad.values())))
                 n += 1
     if a.shards:
         s = report(by, "planted mistakes on correct recitation")
@@ -133,7 +141,7 @@ def main():
         for k, v in sorted(kinds.items()):
             print(f"    {k:<10} {sum(x > thr for x in v) / len(v):.2f}  (n={len(v)})")
         if a.out:
-            json.dump(dict(summary=s, clips=n), open(a.out, "w"), indent=1)
+            json.dump(dict(summary=s), open(a.out, "w"), indent=1)
 
     if a.sessions:
         by = {}
@@ -150,7 +158,7 @@ def main():
             if sc is None:
                 continue
             wrong = {m["word"] for m in d["marks"]}
-            by.setdefault(d.get("reciter") or "unknown", []).extend((-v, int(g in wrong)) for g, v in sc.items())
+            by.setdefault(d.get("reciter") or "unknown", []).extend((v, int(g in wrong)) for g, v in sc.items())
         report(by, "labelled clips")
 
 

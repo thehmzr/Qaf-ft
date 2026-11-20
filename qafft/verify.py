@@ -30,3 +30,32 @@ def group_scores(tok_scores, groups):
     for s, g in zip(tok_scores, groups):
         out[g] = min(out.get(g, 0.0), s)
     return out
+
+
+def extra_sounds(logp, ids, groups, blank):
+    """Sounds the model hears that the expected text does not contain.
+
+    Alignment scoring only asks "is each expected sound there?". This asks the
+    opposite: decode freely, line the result up with the expected tokens, and
+    charge every unmatched heard sound to the word next to it. The charge is
+    -log(1 - p), p being the model's confidence in the extra sound, so a faint
+    blip costs little and a clear extra sound costs a lot.
+    """
+    import math
+    from rapidfuzz.distance import Levenshtein
+    best = logp.max(-1)
+    heard, conf, prev = [], [], blank
+    for t, (i, v) in enumerate(zip(best.indices.tolist(), best.values.tolist())):
+        if i != blank and i != prev:
+            heard.append(i); conf.append([v])
+        elif i != blank:
+            conf[-1].append(v)
+        prev = i
+    out = {}
+    for tag, i1, i2, j1, j2 in Levenshtein.opcodes(ids, heard):
+        extra = range(j1, j2) if tag == "insert" else range(j1 + (i2 - i1), j2) if tag == "replace" else ()
+        for j in extra:
+            p = min(0.999999, math.exp(sum(conf[j]) / len(conf[j])))
+            g = groups[max(0, min(len(groups) - 1, i1 - 1 if tag == "insert" else i2 - 1))]
+            out[g] = max(out.get(g, 0.0), -math.log(1 - p))
+    return out

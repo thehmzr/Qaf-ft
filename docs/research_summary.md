@@ -102,3 +102,8 @@ Limits: one reciter, so no interval; mistakes are planted in the text, which is 
 mistakes; expert studio audio. Qalqalah scores zero because the planted mistake removes an
 expected sound, and alignment scoring cannot see a sound that is present in the audio but absent
 from the expected text. Needs a second check against the free decode.
+
+Update: with the extra-sound check added and both held-out reciters (800 clips): AUC 0.998;
+caught at 5% / 1% / 0.1% false flags: 99.4% / 97.0% / 82.5%. By kind at 1%: letter 1.00,
+vowel 1.00, doubling 1.00, ghunnah 0.99, madd 0.91, qalqalah 0.88. Intervals from two reciters
+are not meaningful. Same limits as above: planted in the text, expert studio audio, Juz Amma.
