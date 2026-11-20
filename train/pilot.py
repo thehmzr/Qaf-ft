@@ -29,7 +29,7 @@ FIRST_SURA = 78
 class Segments(torch.utils.data.Dataset):
     """Reads audio bytes and phoneme strings straight from parquet row groups."""
 
-    def __init__(self, files, vocab, max_sec=20.0):
+    def __init__(self, files, vocab, max_sec=20.0, first_sura=FIRST_SURA):
         self.vocab, self.items = vocab, []
         for f in files:
             pf = pq.ParquetFile(f)
@@ -38,7 +38,7 @@ class Segments(torch.utils.data.Dataset):
             for rg in range(pf.num_row_groups):
                 t = pf.read_row_group(rg, columns=["start_span", "duration_seconds", "phonemes"]).to_pylist()
                 for i, r in enumerate(t):
-                    if not r["start_span"] or r["start_span"]["sura_idx"] < FIRST_SURA:
+                    if not r["start_span"] or r["start_span"]["sura_idx"] < first_sura:
                         continue
                     if r["duration_seconds"] > max_sec or not r["phonemes"]:
                         continue
