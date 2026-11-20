@@ -13,10 +13,22 @@ from urllib.parse import parse_qs, urlparse
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 from qafft.phonetic import ayah_sites, ayah_tokens, ayah_uthmani
+from qafft.tajweed_text import COLOURS, NAMES, ORDER, coloured_words
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = None
 CLIP_KINDS = ["usable", "incomplete", "different ayah", "several ayahs", "noise or unrelated"]
+SURAS = ("Al-Fatihah Al-Baqarah Aal-Imran An-Nisa Al-Maidah Al-Anam Al-Araf Al-Anfal At-Tawbah Yunus Hud Yusuf "
+         "Ar-Rad Ibrahim Al-Hijr An-Nahl Al-Isra Al-Kahf Maryam Ta-Ha Al-Anbiya Al-Hajj Al-Muminun An-Nur "
+         "Al-Furqan Ash-Shuara An-Naml Al-Qasas Al-Ankabut Ar-Rum Luqman As-Sajdah Al-Ahzab Saba Fatir Ya-Sin "
+         "As-Saffat Sad Az-Zumar Ghafir Fussilat Ash-Shura Az-Zukhruf Ad-Dukhan Al-Jathiyah Al-Ahqaf Muhammad "
+         "Al-Fath Al-Hujurat Qaf Adh-Dhariyat At-Tur An-Najm Al-Qamar Ar-Rahman Al-Waqiah Al-Hadid Al-Mujadilah "
+         "Al-Hashr Al-Mumtahanah As-Saff Al-Jumuah Al-Munafiqun At-Taghabun At-Talaq At-Tahrim Al-Mulk Al-Qalam "
+         "Al-Haqqah Al-Maarij Nuh Al-Jinn Al-Muzzammil Al-Muddaththir Al-Qiyamah Al-Insan Al-Mursalat An-Naba "
+         "An-Naziat Abasa At-Takwir Al-Infitar Al-Mutaffifin Al-Inshiqaq Al-Buruj At-Tariq Al-Ala Al-Ghashiyah "
+         "Al-Fajr Al-Balad Ash-Shams Al-Layl Ad-Duha Ash-Sharh At-Tin Al-Alaq Al-Qadr Al-Bayyinah Az-Zalzalah "
+         "Al-Adiyat Al-Qariah At-Takathur Al-Asr Al-Humazah Al-Fil Quraysh Al-Maun Al-Kawthar Al-Kafirun An-Nasr "
+         "Al-Masad Al-Ikhlas Al-Falaq An-Nas").split()
 MISTAKES = ["letter", "vowel mark", "madd length", "ghunnah", "qalqalah", "skipped", "added", "repeated", "other"]
 
 
@@ -66,11 +78,13 @@ class Handler(BaseHTTPRequestHandler):
         if u.path == "/":
             return self.send(200, open(os.path.join(HERE, "index.html"), "rb").read(), "text/html")
         if u.path == "/meta":
-            return self.send(200, dict(sizes=sura_sizes(), mistakes=MISTAKES, clip_kinds=CLIP_KINDS))
+            return self.send(200, dict(sizes=sura_sizes(), mistakes=MISTAKES, clip_kinds=CLIP_KINDS, suras=SURAS,
+                                       rules=[dict(id=r, name=NAMES[r], colour=COLOURS[r]) for r in ORDER]))
         if u.path == "/ayah":
             s, a = int(q["s"][0]), int(q["a"][0])
             text = ayah_uthmani(s, a)
-            return self.send(200, dict(sura=s, aya=a, words=text.split(), tokens=ayah_tokens(s, a), sites=ayah_sites(s, a)))
+            return self.send(200, dict(sura=s, aya=a, words=text.split(), tokens=ayah_tokens(s, a), sites=ayah_sites(s, a),
+                                       coloured=coloured_words(text.split())))
         if u.path == "/list":
             items = []
             for f in sorted(os.listdir(DATA)):
