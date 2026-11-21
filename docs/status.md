@@ -8,7 +8,7 @@ folded into count tokens. No language model. Mistakes are found by a separate ch
 Current target: words and vowels. Tajweed judging comes last.
 
 ## Where things are
-- Everything is on `main` (branch `labeler-tajweed` is merged).
+- Everything up to the words-and-vowels check is on `main`; the phone stage is on branch `phone-finetune`.
 - Trained: pilot (suras 78-114) and full run (all suras, 30,000 steps, about 9 GPU-hours).
 - Built: evaluation command, mistake generator, labelling tool (batch queue, suggestion review,
   sound-level annotation, tajweed colouring), phone-clip scoring.
@@ -23,9 +23,9 @@ Current target: words and vowels. Tajweed judging comes last.
 - Token error on two held-out reciters, all suras: 0.43% (pilot 1.2%).
 - Checker, 800 held-out clips with one planted mistake each: AUC 0.999; caught at 5% / 1% / 0.1%
   false flags: 99.9% / 98.3% / 92.1%.
-- Phone audio: on 25 hand-labelled doubted correct clips the checker flags about half the words
-  at the studio threshold, with or without tajweed judged; about a quarter of phone clips match
-  their claimed ayah within 5% on words and vowels.
+- Phone audio: on 25 hand-labelled doubted correct clips the checker flags 38-56% of words
+  at the studio threshold, with or without tajweed judged; about a third of scored phone clips
+  match their claimed ayah within 5% on words and vowels.
 - No WER or CER: the model outputs sound tokens, not text.
 
 Every experiment: `results.md`. Details and sources: `research_summary.md`.

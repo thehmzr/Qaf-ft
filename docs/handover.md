@@ -20,7 +20,7 @@ and `research_summary.md` for numbers and sources.
 | Batch builder | `data_tools/make_queue.py`, `propose.py` | Done |
 | Text and tajweed colours | `qafft/quran_text.py`, `qafft/tajweed_text.py` | Done |
 
-Everything is on `main`. `models/full/best.pt` is the checkpoint from step 19,000 of the 30,000-step run, the one with the best validation score; the 0.43% test figure belongs to it.
+Everything up to the words-and-vowels check is on `main`. The phone stage (selection, fine-tune code, notebook builder, scoring on a GPU backend) is on branch `phone-finetune` until it is merged. `models/full/best.pt` is the checkpoint from step 19,000 of the 30,000-step run, the one with the best validation score; the 0.43% test figure belongs to it.
 
 ## 2. Set up on a new machine
 
@@ -63,8 +63,8 @@ to push and read runs, and a Hugging Face token for gated sets.
 
 - Text-output models hide mistakes; sound tokens without a language model do not.
 - The model is strong on studio reciters and weak on phones: on 25 hand-labelled correct phone
-  clips the checker flagged about half the words at the studio threshold, with or without
-  tajweed judged. The gap is acoustic.
+  clips the checker flagged 38-56% of words at the studio threshold depending on mode and
+  threshold set, with or without tajweed judged. The gap is acoustic.
 - About half of phone clips in a "sounds differ" sample were cut off, another ayah or noise.
   When the model scores a phone clip as a perfect match, hand labels agreed 7 times out of 7.
 - Ordinary reciters often do not apply tajweed lengths, so judging lengths produces false flags.
@@ -147,8 +147,8 @@ licence question, and the only source of word-located real mistakes.
   freely and charge unmatched sounds to the neighbouring word; the larger of the two is the word's
   score. A threshold from known-correct recitation turns it into pass, unsure or flag.
 - **Words-and-vowels mode.** Merge token classes that differ only in tajweed detail before scoring.
-  Measured on 25 hand-labelled correct phone clips: about half the words flagged either way
-  (54% vs 56% in the first run; 38% vs 53% with per-mode thresholds, `results.md`). The phone
+  Measured on 25 hand-labelled correct phone clips: 54% vs 56% in the first run; 38% vs 53%
+  with per-mode thresholds (`results.md`). Neither mode brings it down. The phone
   gap is acoustic, not about lengths.
 - **Filtering phone clips.** Score each clip against the ayah its file name claims; keep close
   matches for training, send partial matches to labelling, drop the rest.
@@ -177,7 +177,7 @@ datasets or licences. Five parts, each usable on its own:
 |---|---|---|---|
 | Labelling | Listen to a clip, confirm or reject the model's suggestions, mark what it missed, record what was said sound by sound | `labeler/` | Working |
 | Data building | Turn text into sound tokens, score and filter phone clips, build labelling batches, generate mistakes | `qafft/phonetic.py`, `qafft/mistakes.py`, `data_tools/` | Working; long-recitation cutting not built |
-| Training | One script per stage, run on a GPU session | `train/` | Expert stage done; phone and mistake stages not built |
+| Training | One script per stage, run on a GPU session | `train/` | Expert stage done; phone stage written and dry-run, not yet run; mistake stage not built |
 | Evaluation | Score any checkpoint on labelled clips or planted mistakes, with intervals by reciter | `eval/`, `qafft/verify.py`, `qafft/mdd.py` | Working |
 | Export | Compress the model and measure speed on a phone | — | Not started |
 

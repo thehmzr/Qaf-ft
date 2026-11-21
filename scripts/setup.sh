@@ -5,7 +5,7 @@ set -e
 cd "$(dirname "$0")/.."
 
 if command -v uv >/dev/null; then
-  uv venv --python 3.12 .venv
+  uv venv --allow-existing --python 3.12 .venv
   uv pip install --python .venv/bin/python -r requirements.txt
 elif command -v python3.12 >/dev/null; then
   python3.12 -m venv .venv
