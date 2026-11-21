@@ -3,13 +3,15 @@
   python tools/serve_pages.py [--port 8777]
 
 /state.json is built on each request from data/page_state.json, with live progress
-for jobs that have a "live" entry (lines counted in result files).
+for jobs that have a "live" entry (lines counted in result files). The time left is worked
+out from the rate over the last half hour of page refreshes.
 """
-import argparse, glob, http.server, json, os, time
+import argparse, collections, glob, http.server, json, os, time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAGES = os.path.join(ROOT, "page")
 STATE = os.path.join(ROOT, "data", "page_state.json")
+HISTORY = collections.defaultdict(collections.deque)    # job id -> recent (time, done), for the rate
 
 
 def count_lines(files):
@@ -31,9 +33,12 @@ def live(job, now):
         job["status"] = "done"
     elif now - newest < spec.get("stall_after", 600):
         job["status"] = "running"
-        start = spec.get("start")
-        if start and done:
-            rate = done / max(1, now - start)
+        h = HISTORY[job["id"]]
+        h.append((now, done))
+        while len(h) > 2 and now - h[0][0] > 1800:      # rate over the last half hour
+            h.popleft()
+        if len(h) >= 2 and h[-1][1] > h[0][1]:
+            rate = (h[-1][1] - h[0][1]) / (h[-1][0] - h[0][0])
             job["eta_s"] = (total - done) / rate
     else:
         job["status"] = "stalled" if done else "queued"
@@ -53,6 +58,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*a, directory=PAGES, **kw)
 
     def do_GET(self):
+        host = (self.headers.get("Host") or "").split(":")[0]
+        if host not in ("127.0.0.1", "localhost"):
+            self.send_error(403)
+            return
         if self.path.split("?")[0] == "/state.json":
             try:
                 body = json.dumps(state(), ensure_ascii=False).encode()
