@@ -27,6 +27,8 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--scores", default="data/phone_scores")
 ap.add_argument("--max-err-basic", type=float, default=0.05)
 ap.add_argument("--ratio", type=float, nargs=2, default=(0.8, 1.25), help="decoded / expected length")
+ap.add_argument("--tps", type=float, nargs=2, default=(2.0, 10.0),
+                help="expected sound tokens per second; studio recitation spans about 2.5-7.3 (1st-99th percentile)")
 ap.add_argument("--min-sec", type=float, default=1.0)
 ap.add_argument("--max-sec", type=float, default=20.0)
 ap.add_argument("--max-per-ayah", type=int, default=30, help="cap so a few ayahs do not dominate")
@@ -94,6 +96,8 @@ for f in sorted(glob.glob(os.path.join(P(a.scores), "clean-*.jsonl"))):
             why["holdout or queue clip"] += 1; continue
         if not a.min_sec <= r["dur"] <= a.max_sec:
             why["length"] += 1; continue
+        if not a.tps[0] <= r["n"] / max(r["dur"], 1e-6) <= a.tps[1]:
+            why["speed (model-free)"] += 1; continue          # cut off or far too long for the ayah
         if not a.ratio[0] <= r["ratio"] <= a.ratio[1]:
             why["decoded length"] += 1; continue
         if r["err_basic"] > a.max_err_basic:
