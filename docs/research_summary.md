@@ -114,3 +114,15 @@ Best validation 0.18% (step 19,000); validation swung between 0.2% and 1.5% from
 Checker on the same 800 held-out Juz Amma clips as the pilot (planted mistakes): AUC 0.999;
 caught at 5% / 1% / 0.1% false flags: 99.9% / 98.3% / 92.1% (pilot: 99.4 / 97.0 / 82.5).
 By kind at 1%: letter, vowel, doubling, ghunnah 1.00; madd 0.97; qalqalah 0.84.
+
+## First hand-labelled phone clips (67 of batch 1, labelled without seeing model suggestions)
+Batch 1 drew 85 clips the model scored as "right length, 10-50% of sounds differ" and 15 it scored perfect.
+Of 60 labelled from the first group: 32 unusable (24 incomplete, 5 different ayah, 3 noise),
+25 correct, 3 with a mistake. Of 7 labelled controls: 7 correct.
+On the 25 clips judged correct, the checker (threshold set on studio reciters) flagged 48 of 95
+words (51%), 18 strongly (19%). On the 7 controls it flagged 1 of 26 words, none strongly.
+The 3 mistake clips: one vowel changed, one sound dropped, one with short ghunnah and madd; the
+checker flagged the marked word in 2 of the 2 clips that had a word mark, among other words.
+Reading: on phone audio the model's mismatch score does not separate incomplete clips, correct
+recitation it mishears, and real mistakes (median mismatch 0.21 vs 0.22). The gap is phone audio,
+not the checker logic. Small sample; one labeller; no second pass yet.
