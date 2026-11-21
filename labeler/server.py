@@ -127,6 +127,23 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, dict(none=True, need=5 - len(pool)))
             d = random.choice(pool[:-3] or pool)
             return self.send(200, dict(id=d["id"], sura=d["sura"], aya=d["aya"]))
+        if u.path == "/queue":
+            # next clip of a prepared batch (data/queue) that has no label yet
+            qdir = os.path.join(os.path.dirname(DATA), "queue")
+            mf = os.path.join(qdir, "manifest.json")
+            if not os.path.exists(mf):
+                return self.send(200, dict(none=True, why="no batch found in data/queue"))
+            items = json.load(open(mf))["items"]
+            done = {d.get("source") for d in load_labels()}
+            left = [x for x in items if x["file"] not in done]
+            if not left:
+                return self.send(200, dict(none=True, why="batch finished", total=len(items), done=len(items)))
+            return self.send(200, dict(left[0], total=len(items), done=len(items) - len(left)))
+        if u.path == "/queue/audio":
+            path = os.path.join(os.path.dirname(DATA), "queue", os.path.basename(q["file"][0]))
+            if not os.path.exists(path):
+                return self.send(404, dict(error="not found"))
+            return self.send(200, open(path, "rb").read(), "audio/wav")
         if u.path == "/stats":
             return self.send(200, consistency(load_labels()))
         self.send(404, dict(error="not found"))
