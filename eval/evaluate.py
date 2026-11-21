@@ -12,7 +12,7 @@
 
 Prints, with 95% intervals from resampling reciters: how well scores separate right
 from wrong words (AUC) and the share of wrong words caught when false flags are held
-to 5%, 1% and 0.1% of correct words.
+to 5%, 1% and 0.1% of correct words. --score picks the word score.
 """
 import argparse, glob, io, json, os, random, sys
 
@@ -24,7 +24,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT); sys.path.insert(0, os.path.join(ROOT, "train"))
 from qafft.phonetic import fold_with_groups
 from qafft.mistakes import perturb
-from qafft.verify import extra_sounds, group_scores, token_scores
+from qafft.verify import extra_sounds, gop_sf_scores, group_scores, margin_scores, token_scores
 
 
 def auc(pos, neg):
@@ -82,6 +82,8 @@ def main():
     ap.add_argument("--out", default=None)
     ap.add_argument("--variants", action="store_true",
                     help="score every word against legal reading choices too and keep its best score")
+    ap.add_argument("--score", default="current", choices=["current", "gop", "margin"],
+                    help="word score: current (weakest sound / extra sound), gop (segment-free GOP), margin (competing-token margin)")
     a = ap.parse_args()
     from pilot import QafModel
     torch.set_num_threads(4)
@@ -101,6 +103,10 @@ def main():
         ts = token_scores(lp, ids, blank)
         if ts is None:
             return None
+        if a.score == "gop":
+            return {g: -v for g, v in gop_sf_scores(lp, ids, grps, blank).items()}
+        if a.score == "margin":
+            return {g: -v for g, v in margin_scores(lp, ids, grps, blank).items()}
         # badness per word: the weakest expected sound, or a clear extra sound
         bad = {g: -v for g, v in group_scores(ts, grps).items()}
         for g, v in extra_sounds(lp, ids, grps, blank).items():
