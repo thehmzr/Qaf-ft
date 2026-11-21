@@ -38,7 +38,7 @@ button:hover{background:var(--accent-soft)} button:focus-visible{outline:2px sol
 <main>
   <nav><a href="index.html">Progress</a><a href="system.html">System</a><a href="long.html">Long recitation</a></nav>
   <h1 id="title">Long recitation, ayah by ayah</h1>
-  <p class="lede">A long recitation, checked by ear: no mistakes in words or vowels; tajweed (madd lengths and the like) may slip in places. It is cut into ayahs by the word times the model found. Click a word to play from it. Thresholds are set on the first half of this recitation. Grey words could not be matched in the audio.</p>
+  <p class="lede">A long recitation, checked by ear: no mistakes in words or vowels; only a very few tajweed slips (madd lengths and the like). It is cut into ayahs by the word times the model found. Click a word to play from it. Thresholds are set on the first half of this recitation. Grey words could not be matched in the audio.</p>
   <p class="lede" id="meaning"></p>
   <div class="legend"><span class="w flag" id="lg1">1% level</span><span class="w strong" id="lg2">0.1% level</span><span class="w miss">not matched</span></div>
   <div class="bar">
@@ -70,7 +70,7 @@ button:hover{background:var(--accent-soft)} button:focus-visible{outline:2px sol
     var t=thr(), h="";
     $("meaning").textContent=t.m==="basic"
       ? "Words and vowels: every coloured word is a false flag, since the words and vowels here are correct."
-      : "Tajweed judged: a coloured word is either a real tajweed slip (for example a madd held shorter) or a false flag. Listen and judge.";
+      : "Tajweed judged: most coloured words are false flags too; only a very few may be real tajweed slips (for example a madd held shorter). Listen and judge.";
     visible().forEach(function(i){var a=data.ayahs[i];
       var nf=a.words.filter(function(w){var c=cls(w,t);return c==="flag"||c==="strong"}).length;
       h+='<section class="ayah" id="a'+i+'"><div class="head"><b>'+esc(label(a))+'</b><span>'+(a.end-a.start).toFixed(1)+' s</span>'+(nf?'<span>'+nf+' flagged</span>':'')+(a.missing?'<span>'+a.missing+' word'+(a.missing>1?'s':'')+' not matched</span>':'')+'<button data-play="'+i+'" style="margin-left:auto">Play</button></div><div class="text">'+
