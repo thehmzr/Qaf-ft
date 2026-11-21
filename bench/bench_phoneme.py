@@ -1,12 +1,12 @@
 """Qaf-ft verifier prototype on real learner clips.
 
-Uses an existing open phoneme model (muaalem v3_2, benchmarking only) to test the
+Uses an existing open phoneme model (model_a, benchmarking only) to test the
 design: instead of transcribing and diffing text, score the EXPECTED ayah's sound
 sequence against the audio.
   per  : edit distance between free phoneme decode and expected phonemes / length
   llr  : (log P_ctc(expected) - log P(best path)) per frame; 0 = audio fits the ayah perfectly
   minp : lowest aligned per-phoneme log posterior (the single weakest sound)
-Output: bench/out/phoneme_retasy.jsonl
+Output: bench/out/phoneme_learner_a.jsonl
 """
 import glob, io, json, os, re, sys
 import numpy as np, torch, soundfile as sf
@@ -20,7 +20,7 @@ from rapidfuzz.distance import Levenshtein
 import quran_transcript as qt
 from quran_transcript import Aya, quran_phonetizer, MoshafAttributes
 
-MD = f"{ROOT}/models/muaalem-v3_2"
+MD = f"{ROOT}/models/model_a"
 
 
 def load_model():
@@ -58,11 +58,11 @@ def main(limit=0):
     idx = ayah_index()
     print("ayahs indexed", len(idx), flush=True)
     mos = MoshafAttributes(rewaya="hafs", madd_monfasel_len=4, madd_mottasel_len=4, madd_mottasel_waqf=4, madd_aared_len=4)
-    out = f"{ROOT}/bench/out/phoneme_retasy.jsonl"
+    out = f"{ROOT}/bench/out/phoneme_learner_a.jsonl"
     done = {json.loads(l)["id"] for l in open(out)} if os.path.exists(out) else set()
     n, skipped = len(done), 0
     with open(out, "a") as fo:
-        for f in sorted(glob.glob(f"{ROOT}/data/retasy/data/*.parquet")):
+        for f in sorted(glob.glob(f"{ROOT}/data/learner_a/data/*.parquet")):
             pf = pq.ParquetFile(f)
             for rg in range(pf.num_row_groups):
                 for r in pf.read_row_group(rg, columns=["audio", "Aya", "final_label", "reciter_id"]).to_pylist():

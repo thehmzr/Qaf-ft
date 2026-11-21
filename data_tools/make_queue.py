@@ -1,7 +1,7 @@
 """Builds a labelling queue from scored phone clips.
 
   python data_tools/make_queue.py --scores data/phone_scores/clean-00000.jsonl \
-      --shard data/tlog/data/clean-00000.parquet --out data/queue_export --n 100
+      --shard data/phone_src/data/clean-00000.parquet --out data/queue_export --n 100
 
 Picks clips whose length fits the ayah but whose sounds partly differ (real mistake or
 model error: only a listener can tell), mixes in some close matches as hidden controls,

@@ -59,6 +59,7 @@ pre{background:var(--surface);border:1px solid var(--line);border-radius:10px;pa
 <main>
 <header>
   <h1>Qaf-ft system</h1>
+  <p><a href="index.html">Progress page</a></p>
   <p class="lede">A speech model for Quran recitation that writes down the sounds it hears and compares them with the expected ayah, so a mistake is located at the word and named. This page is the technical reference: how it works, how it is trained and labelled, and what has been measured.</p>
   <div class="kpis">
     <div class="kpi"><b>0.43%</b><span>sound-token errors on two reciters never trained on</span></div>
@@ -133,7 +134,7 @@ pre{background:var(--surface);border:1px solid var(--line);border-radius:10px;pa
     <text x="438" y="58" font-weight="600">FastConformer encoder</text><text x="438" y="76" font-size="11.5">17 layers, about 115M weights</text><text x="438" y="94" font-size="11.5">12.5 frames/s out</text>
     <text x="630" y="67" font-weight="600">Upsample ×2</text><text x="630" y="85" font-size="11.5">25 frames/s</text>
     <text x="799" y="67" font-weight="600">Output layer</text><text x="799" y="85" font-size="11.5">81 tokens + blank</text>
-    <text x="438" y="134" font-size="11.5">starts from NVIDIA's Arabic checkpoint; the two layers after it are new</text>
+    <text x="438" y="134" font-size="11.5">starts from the base Arabic checkpoint; the two layers after it are new</text>
   </g>
 </svg>
 <figcaption>The encoder is fine-tuned from an Arabic checkpoint; the upsampling and output layers are trained from nothing. Training uses the CTC loss, which needs no timing labels: only the audio and its token sequence. The doubling to 25 frames a second leaves room for fast recitation, where sounds can outnumber encoder frames.</figcaption>
@@ -237,10 +238,10 @@ pre{background:var(--surface);border:1px solid var(--line);border-radius:10px;pa
 python eval/evaluate.py --ckpt best.pt --sessions data/sessions   # score a model on labelled clips
 python eval/evaluate.py --ckpt best.pt --shards FILES             # score with planted mistakes
 python data_tools/phone_filter.py --ckpt best.pt --shards FILES   # score phone recordings
-train/kaggle_pilot.ipynb, train/kaggle_full.ipynb          # training, on a Kaggle GPU session</pre>
+train/kaggle_pilot.ipynb, train/kaggle_full.ipynb          # training, on a GPU notebook session</pre>
 
 <h2><span>10</span>Data and licence position</h2>
-<p>The trained model contains NVIDIA's Arabic checkpoint (credit required) and an openly licensed set of expert recitations. Nothing with a non-commercial or share-alike licence has been used, so the licence of the model stays a free choice as long as credits are kept. Datasets whose licences would dictate the model's own licence are excluded. Credits are listed in the repository.</p>
+<p>The trained model contains the base Arabic checkpoint and the expert set of recitations. Nothing with non-commercial or share-alike terms has been used, so the model's own terms stay a free choice. Datasets whose terms would dictate the model's own terms are excluded. Usage terms are kept with the source files.</p>
 </main>
 </body>
 </html>
