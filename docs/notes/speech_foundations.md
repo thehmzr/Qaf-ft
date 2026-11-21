@@ -2,31 +2,28 @@
 
 Sources read for these notes, with the parts covered:
 
-1. *Speech and Language Processing*, 3rd ed. draft (dated 19 August 2026),
-   https://web.stanford.edu/~jurafsky/slp3/ . Ch. 15 "Phonetics and Speech Feature
-   Extraction" (15.pdf) and Ch. 16 "Automatic Speech Recognition" (16.pdf), read in
-   full. Ch. 17 (TTS) skipped.
-2. The CCRMA online books, https://ccrma.stanford.edu/~jos/ : *Spectral Audio Signal
-   Processing* (sasp/), *Mathematics of the DFT* (mdft/), *Digital Audio Resampling*
-   (resample/). Only the pages on STFT, windows, spectrograms, resolution, aliasing,
-   auditory scales and resampling.
-3. Hugging Face Audio Course, https://huggingface.co/learn/audio-course : Unit 1
-   (audio data, preprocessing), Unit 3 (CTC, seq2seq), Unit 5 (choosing a dataset,
-   models, evaluation, fine-tuning).
-4. Stanford CS224S *Spoken Language Processing*, Spring 2025 (latest public
-   offering), https://web.stanford.edu/class/cs224s/ : syllabus and slides for
-   lectures 2, 9, 10, 11 and 14.
-5. *Audio Signal Processing for Machine Learning* video series, using the companion
-   repository https://github.com/musikalkemist/AudioSignalProcessingForML (lesson
-   list plus slide decks 6, 7, 15, 17, 19, 21). The videos themselves were not watched.
-6. Toolkit docs: NVIDIA NeMo ASR docs (models, configs, fine-tuning, NeMo Forced
-   Aligner) plus NeMo source and tutorials on GitHub; SpeechBrain "Speech
-   Recognition From Scratch"; ESPnet2 tutorial and the `asr.sh` template; Montreal
-   Forced Aligner (MFA) docs.
+1. *Speech and Language Processing*, 3rd ed. draft (dated 19 August 2026). Ch. 15
+   "Phonetics and Speech Feature Extraction" (15.pdf) and Ch. 16 "Automatic Speech
+   Recognition" (16.pdf), read in full. Ch. 17 (TTS) skipped.
+2. Online signal-processing books: *Spectral Audio Signal Processing* (sasp/),
+   *Mathematics of the DFT* (mdft/), *Digital Audio Resampling* (resample/). Only the
+   pages on STFT, windows, spectrograms, resolution, aliasing, auditory scales and
+   resampling.
+3. An online audio course: Unit 1 (audio data, preprocessing), Unit 3 (CTC, seq2seq),
+   Unit 5 (choosing a dataset, models, evaluation, fine-tuning).
+4. A university course, *Spoken Language Processing*, Spring 2025 (latest public
+   offering): syllabus and slides for lectures 2, 9, 10, 11 and 14.
+5. *Audio Signal Processing for Machine Learning* video series, using its companion
+   repository (lesson list plus slide decks 6, 7, 15, 17, 19, 21). The videos
+   themselves were not watched.
+6. Toolkit docs: the training toolkit's ASR docs (models, configs, fine-tuning, its
+   forced aligner) plus its source and tutorials; a second toolkit's "Speech
+   Recognition From Scratch" tutorial; a third toolkit's tutorial and its `asr.sh`
+   template; the docs of an HMM-based forced aligner.
 
 Conventions
 
-- Section numbers and URLs point to where a point comes from.
+- Section numbers and page names point to where a point comes from.
 - **(inference)** marks anything that goes beyond what the source says, including
   every application to Qaf-ft and every calculation done here.
 - Tajweed facts are domain assumptions to check against the project's own tajweed
@@ -76,7 +73,7 @@ movement.
 - If test audio is 8 kHz (telephone), training audio must be downsampled to 8 kHz.
   When pooling corpora that include telephone speech, all wideband corpora are
   downsampled to 8 kHz. The chapter says different sampling rates "can't" be combined
-  for training and testing (15.5.1). Compare NeMo's advice in section 6.1, which
+  for training and testing (15.5.1). Compare the training toolkit's advice in section 6.1, which
   differs.
 - Windowing: speech is non-stationary, but roughly stationary inside a short window.
   Parameters are window size, stride and shape. Example: 25 ms window, 10 ms stride.
@@ -154,12 +151,11 @@ fine-tuning, a linear CTC head is added and the CNN layers are frozen.
 
 ---
 
-## 2. CCRMA online books (DFT, STFT, windows, filters, resampling)
+## 2. Online signal-processing books (DFT, STFT, windows, filters, resampling)
 
 ### Sampling and aliasing
 
-- Sampling theorem (*Mathematics of the DFT*, "Sampling Theorem",
-  https://ccrma.stanford.edu/~jos/mdft/Sampling_Theorem.html): a signal can be
+- Sampling theorem (*Mathematics of the DFT*, "Sampling Theorem"): a signal can be
   rebuilt exactly from its samples if its spectrum is zero for |f| >= fs/2. The
   reconstruction kernel is sinc(t/Ts). Energy above fs/2 folds back as aliasing:
   shifted spectral copies overlap and add.
@@ -197,7 +193,7 @@ fine-tuning, a linear CTC head is added and the CNN layers are frozen.
 - Bark scale (SASP "The Bark Frequency Scale"): 24 critical bands. About 17-18 of
   them lie below 4 kHz and 21-22 below 8 kHz. There is no mel page in SASP.
 
-### Resampling (*Digital Audio Resampling*, https://ccrma.stanford.edu/~jos/resample/)
+### Resampling (*Digital Audio Resampling*)
 
 - Bandlimited interpolation computes signal values at arbitrary times from samples,
   assuming the signal was bandlimited to fs/2 ("Introduction").
@@ -217,10 +213,9 @@ fine-tuning, a linear CTC head is added and the CNN layers are frozen.
 
 ---
 
-## 3. Hugging Face Audio Course
+## 3. Online audio course
 
 **Unit 1, audio data**
-(https://huggingface.co/learn/audio-course/chapter1/audio_data)
 
 - Speech sits below 8 kHz, so 16 kHz sampling is enough. 8 kHz loses high frequencies
   and sounds muffled.
@@ -232,7 +227,6 @@ fine-tuning, a linear CTC head is added and the CNN layers are frozen.
   pretrained model expects.
 
 **Unit 1, preprocessing**
-(https://huggingface.co/learn/audio-course/chapter1/preprocessing)
 
 - Upsampling 8 to 16 kHz only estimates values between existing samples, because
   there is no content above 4 kHz.
@@ -240,7 +234,7 @@ fine-tuning, a linear CTC head is added and the CNN layers are frozen.
   well-tested libraries.
 - Filter clips longer than 20 s to avoid out-of-memory errors.
 
-**Unit 3, CTC** (https://huggingface.co/learn/audio-course/chapter3/ctc)
+**Unit 3, CTC**
 
 - Wav2Vec2's CNN gives one hidden state per 20 ms with a 25 ms receptive field: 50
   frames per second, 768 dimensions each.
@@ -255,7 +249,6 @@ fine-tuning, a linear CTC head is added and the CNN layers are frozen.
 decodes more slowly than CTC.
 
 **Unit 5, ASR models**
-(https://huggingface.co/learn/audio-course/chapter5/asr_models)
 
 - CTC models are "acoustic-only" and prone to phonetic spelling errors (CHRISTMAUS,
   ROSE for ROAST). They can be fine-tuned with as little as 10 minutes of labelled
@@ -268,7 +261,6 @@ anticipate at inference time". A model trained on clean audiobooks may struggle 
 noise.
 
 **Unit 5, evaluation**
-(https://huggingface.co/learn/audio-course/chapter5/evaluation)
 
 - WER = (S + I + D) / N. CER is the character-level version and gives partial credit.
 - WER can exceed 100%. A value above 100% usually means something is broken.
@@ -277,17 +269,15 @@ noise.
 - Dhivehi baseline: orthographic WER 167.3%, normalized WER 125.7%.
 
 **Unit 5, fine-tuning**
-(https://huggingface.co/learn/audio-course/chapter5/fine-tuning)
-
 - Whisper-small on about 7 h of Dhivehi, resampled from 48 to 16 kHz. Batch 16,
   lr 1e-5 constant with 50 warmup steps, 500 steps, best checkpoint chosen by WER.
 - Result: normalized WER 14.07% (orthographic 63.90%).
 
 ---
 
-## 4. Stanford CS224S Spoken Language Processing (Spring 2025)
+## 4. University course: Spoken Language Processing (Spring 2025)
 
-Syllabus: https://web.stanford.edu/class/cs224s/semesters/2025-spring/syllabus .
+Syllabus and slides as listed above.
 Slides: `.../lecture-slides/224s.25.lecN.pdf`.
 
 **Lec 2, phonetics.** Deep systems learn letter-sound mappings from data better than
@@ -352,7 +342,7 @@ how an accent changes sounds.
 
 ## 5. Audio Signal Processing for Machine Learning (video series)
 
-Companion repository: https://github.com/musikalkemist/AudioSignalProcessingForML.
+Companion repository: the series' public slide and code repository.
 The series has 23 lessons, from waveforms and loudness through time-domain features,
 Fourier transform, DFT, STFT, mel spectrograms and MFCCs to spectral features.
 
@@ -383,10 +373,9 @@ Fourier transform, DFT, STFT, mel spectrograms and MFCCs to spectral features.
 
 ## 6. Toolkit recipes
 
-### 6.1 NVIDIA NeMo ASR
+### 6.1 The training toolkit (ASR)
 
 **Models**
-(https://docs.nvidia.com/nemo-framework/user-guide/latest/nemotoolkit/asr/models.html)
 
 - FastConformer: 8x depthwise-convolution subsampling with 256 channels, kernel size
   9, about 2.4x faster than Conformer. 128 channels are 2.7x faster but lose quality.
@@ -446,7 +435,7 @@ Fourier transform, DFT, STFT, mel spectrograms and MFCCs to spectral features.
 
 **Telephony tutorial** (`tutorials/asr/ASR_for_telephony_speech.ipynb`)
 
-- NeMo's English models were trained on mixed 8 kHz and 16 kHz data: Fisher and
+- The training toolkit's English models were trained on mixed 8 kHz and 16 kHz data: Fisher and
   Switchboard were upsampled to 16 kHz. They therefore handle both narrowband and
   wideband audio.
 - At inference all audio is resampled to 16 kHz.
@@ -463,7 +452,7 @@ Fourier transform, DFT, STFT, mel spectrograms and MFCCs to spectral features.
 - Caveat in the tutorial: it assumes output tokens are well aligned with their audio,
   which "may not always be true for models trained with CTC loss".
 
-**NeMo Forced Aligner** (tools/nemo_forced_aligner.html)
+**The toolkit's forced aligner**
 
 - CTC log-probabilities plus Viterbi give token, word and segment timestamps (CTM and
   ASS files). Works with CTC or hybrid models in CTC mode, not pure Transducer.
@@ -474,10 +463,9 @@ Fourier transform, DFT, STFT, mel spectrograms and MFCCs to spectral features.
 - Evaluate with mean absolute error on start and end times against ground-truth
   CTMs. Better reference text gives better alignment.
 
-### 6.2 SpeechBrain (brief)
+### 6.2 A second toolkit (brief)
 
-"Speech Recognition From Scratch" tutorial
-(https://speechbrain.readthedocs.io/en/latest/tutorials/tasks/speech-recognition-from-scratch.html):
+"Speech Recognition From Scratch" tutorial:
 
 - JSON manifests (id, wav, length, words); SentencePiece unigram, 1000 tokens.
 - CRDNN encoder plus attentional decoder, joint CTC/attention (ctc_weight 0.5, CTC for
@@ -485,19 +473,18 @@ Fourier transform, DFT, STFT, mel spectrograms and MFCCs to spectral features.
 - On-the-fly augmentation: speed 95/100/105%, noise at 0-15 dB SNR, time/frequency
   dropout. Data sorted by length. The page recommends 100-1000 h.
 
-### 6.3 ESPnet2 (brief)
+### 6.3 A third toolkit (brief)
 
-ESPnet2 tutorial (https://espnet.github.io/espnet/espnet2_tutorial.html) and
-`egs2/TEMPLATE/asr1/asr.sh`:
+Its tutorial and `egs2/TEMPLATE/asr1/asr.sh`:
 
 - Stages: 1 data prep; 2 speed perturbation ("0.9 1.0 1.1"); 3 feature
   formatting (16k); 4 remove utterances outside 0.1-20 s; 5 token list (bpe or char);
   6-9 LM; 10-11 ASR training; 12 decoding; 13 scoring (sclite WER/CER/TER).
 - Encoder subsampling defaults to 4.
 
-### 6.4 Montreal Forced Aligner
+### 6.4 HMM-based forced aligner
 
-Docs: https://montreal-forced-aligner.readthedocs.io/en/latest/
+Docs: the aligner's online user guide.
 
 - `mfa align CORPUS DICTIONARY ACOUSTIC_MODEL OUTPUT` writes TextGrids (word and
   phone intervals). `mfa align_one` handles a single file without speaker adaptation.
@@ -544,13 +531,13 @@ as saying it.
    Bluetooth headsets in wideband mode keep content up to about 7-8 kHz (not stated in
    any source here). Keep the 4 kHz case and add a softer case (lowpass around
    6-7 kHz) so the model sees a spread of cutoffs. **(inference)**
-2. **Use NeMo's narrowband switch and codec transcoding instead of only a clean
+2. **Use the training toolkit's narrowband switch and codec transcoding instead of only a clean
    resample.** `nb_augmentation_prob` zeroes STFT bins above `nb_max_freq` in the
    preprocessor itself. Randomizing `nb_max_freq` (for example 3.4-7 kHz) is a cheap
    code change. `TranscodePerturbation` adds the real distortions of
    g711/amr-nb/ogg (band edges 300-3400 Hz, quantization, codec smearing), which a
    resample does not produce. **(inference)** on the choice of values; the mechanisms
-   are documented in NeMo source.
+   are documented in the toolkit source.
 3. **Expect many empty channels on narrowband input.** With slaney mel filters up to
    8 kHz, about 22% of an 80-band filter bank (about 18 channels) lies above 4 kHz
    (computed here from the slaney mel formula). On 8 kHz-sampled audio those channels
@@ -559,9 +546,9 @@ as saying it.
    rarely saw in studio training. This is a plausible direct cause of false flags on
    phone audio. Ways to address it: train with band-limit augmentation (points 1-2);
    evaluate a variant that clamps or masks top channels when the input is detected as
-   narrowband; or fine-tune on mixed-band data as NeMo's English models do (telephony
+   narrowband; or fine-tune on mixed-band data as the training toolkit's English models do (telephony
    tutorial). **(inference)**
-4. **Resample on the phone exactly as in training.** CCRMA *Resampling*: filter
+4. **Resample on the phone exactly as in training.** *Digital Audio Resampling*: filter
    quality varies widely (rectangular truncation about 20 dB vs Kaiser about 80 dB
    stopband), and the transition band sits inside the signal band. Phones record at
    44.1 or 48 kHz. If the app's resampler rolls off differently from the training one
@@ -570,10 +557,10 @@ as saying it.
    app. Add a test that compares log-mel features produced by the app path and the
    training path on the same file. **(inference)**
 5. **Keep the base model's preprocessor settings fixed.** Window, stride, n_fft, mel
-   scale, preemphasis, dither and normalization belong to the checkpoint. The HF
+   scale, preemphasis, dither and normalization belong to the checkpoint. The audio
    course warns that htk vs slaney and power vs amplitude differences matter.
    Any reimplementation on device (for example, if features are computed outside the
-   ONNX graph) must match NeMo's `per_feature`, `preemph 0.97`, `log_zero_guard 2^-24`
+   ONNX graph) must match the training toolkit's `per_feature`, `preemph 0.97`, `log_zero_guard 2^-24`
    and slaney filters exactly. Test feature parity before quantization.
    **(inference)**
 6. **Expect high-frequency letters to suffer most on phones.** SLP 15.5.4: high
@@ -594,22 +581,22 @@ as saying it.
    of a madd, which makes the length label partly unobservable. Consider fewer or
    narrower time masks in the later phone fine-tune epochs. Frequency masks are
    harmless and also mimic band loss. **(inference)**
-9. **Fine-tuning schedule.** NeMo: lr 1e-4 to 1e-5, no Noam warmup reset, SpecAugment
-   on. HF: pick the checkpoint by the held-out metric. CS224S lec 11: with tens of
+9. **Fine-tuning schedule.** Training toolkit: lr 1e-4 to 1e-5, no Noam warmup reset, SpecAugment
+   on. Audio course: pick the checkpoint by the held-out metric. course lec 11: with tens of
    hours, fine-tune rather than train. The project's 3e-5 encoder / 1e-4 head with
    cosine decay and EMA is consistent with this.
 
 ### 7.2 Frame rate vs token rate (affects alignment and madd)
 
 10. **Check the CTC length constraint for fast reciters.** CTC needs T >= U plus one
-    blank between each pair of identical neighbouring tokens (SLP 16.5; CS224S lec 10
+    blank between each pair of identical neighbouring tokens (SLP 16.5; course lec 10
     says T >= U). FastConformer gives 80 ms frames (12.5/s). The project upsamples to
     40 ms (25/s). Sound tokens (letters plus short vowels plus long vowels) can exceed
     12 per second in fast recitation, so the upsampling was the right call. Log the
     ratio U/T per utterance and flag cases above about 0.7: at that point CTC is
     forced into a near-diagonal path and loses confidence. **(inference)**
 11. **Output frame duration limits duration resolution.** At 40 ms frames, a
-    one-frame error is 40 ms, comparable to the shortest consonant durations. MFA
+    one-frame error is 40 ms, comparable to the shortest consonant durations. The HMM aligner
     reaches 10 ms frames, or 1 ms boundary search with `--fine_tune`, although its
     page warns that 25 ms analysis windows blur this. For madd counting, measure
     durations relative to the reciter's local tempo (harakah estimates from nearby
@@ -617,8 +604,8 @@ as saying it.
 
 ### 7.3 CTC peakiness, forced alignment and duration measurement
 
-12. **Do not read durations off CTC frame labels.** CS224S lec 10 shows CTC
-    activations as short spikes with blank dominating, unlike HMM segments. NeMo's
+12. **Do not read durations off CTC frame labels.** course lec 10 shows CTC
+    activations as short spikes with blank dominating, unlike HMM segments. The training toolkit's
     streaming tutorial warns that CTC tokens may not line up with their audio. A long
     vowel can occupy one or two frames in a `forced_align` path while blank fills the
     rest of its real duration. The number of frames assigned to a token therefore
@@ -627,29 +614,29 @@ as saying it.
       frame, which includes trailing blanks;
     - (b) acoustic measurement inside that span (voicing from autocorrelation pitch,
       intensity per SLP 15.4.3-15.4.4, nasal energy for ghunnah);
-    - (c) an HMM aligner (MFA) for durations, as in point 14.
+    - (c) an HMM aligner (the HMM forced aligner) for durations, as in point 14.
 
-    Validate whichever is chosen against hand-marked boundaries using NFA/MFA-style
+    Validate whichever is chosen against hand-marked boundaries using aligner-style
     MAE on start and end times. **(inference)**
 13. **Keep length counts in the token set.** Encoding madd length as token identity
     (as the 81-token set does) moves the length decision from timing into
     classification, which suits peaky CTC. Expect confusions between adjacent
     counts. Score them as tajweed-level, not word-level, errors. **(inference)**
-14. **Use MFA as a duration reference.**
-    - Train an MFA acoustic model with a pronunciation dictionary written in Qaf sound
-      tokens, with phone groups for long/short vowel pairs (supported, per the MFA
+14. **Use the HMM forced aligner as a duration reference.**
+    - Train an HMM-aligner acoustic model with a pronunciation dictionary written in Qaf sound
+      tokens, with phone groups for long/short vowel pairs (supported, per the aligner's
       train page).
     - Use expert recordings with speaker adaptation (SAT/fMLLR), not single-speaker
       mode, when a reciter has several files.
     - Its 5-state, 10 ms-minimum topology and `--fine_tune` give boundaries for
       calibrating or replacing CTC-based madd and ghunnah measurement.
-    - MFA's overlap score and PER (with double-weighted substitutions) can serve as
+    - the HMM aligner's overlap score and PER (with double-weighted substitutions) can serve as
       alignment-quality checks.
 
     **(inference)**
 15. **Forced alignment against the expected text is biased toward the text.** The
     checker aligns the expected tokens, so Viterbi will place a token somewhere even
-    if it was not said (NFA notes that alignment quality depends on reference
+    if it was not said (the toolkit's aligner notes that alignment quality depends on reference
     accuracy). Always pair the forced path with a free (greedy) decode, or with the
     margin between the forced token's posterior and the best competing non-blank
     token over the same frames. Large margins against the expected token are the
@@ -661,11 +648,11 @@ as saying it.
 16. **Split on pauses, then match.** For pause candidates, use frame RMS energy (series
     lesson 7; SLP intensity) combined with the CTC blank posterior (long blank runs).
     Then confirm each cut by aligning the expected ayah token sequences. This is the
-    same idea as NFA's segment-level timestamps and MMS-lab's chapter alignment
-    (CS224S lec 14). **(inference)**
-17. **Run long audio in overlapping buffers.** HF Unit 5 and NeMo's buffered tutorial:
+    same idea as the toolkit aligner's segment-level timestamps and MMS-lab's chapter alignment
+    (course lec 14). **(inference)**
+17. **Run long audio in overlapping buffers.** Audio course Unit 5 and the training toolkit's buffered tutorial:
     process chunks with left and right context and keep only the middle tokens.
-    Examples from the sources: chunk 4 s with 2 s context; NFA defaults 1.6 s chunk in
+    Examples from the sources: chunk 4 s with 2 s context; the toolkit aligner defaults 1.6 s chunk in
     a 4 s buffer. FastConformer local attention also handles audio longer than an hour
     in one pass. Prefer cuts that land inside detected pauses so no word is split.
     **(inference)** on the pairing with pauses.
@@ -684,7 +671,7 @@ as saying it.
       posterior means less on narrowband audio.
 19. **Train and calibrate on phone audio of correct recitation.** The verifier's main
     job is to cut false flags. Its negatives (no mistake) must include many
-    phone-recorded correct readings across devices and codecs. HF Unit 5: match
+    phone-recorded correct readings across devices and codecs. Audio course Unit 5: match
     training data to inference conditions. **(inference)**
 
 ### 7.6 Live tracking with chunked or streaming audio
@@ -692,10 +679,10 @@ as saying it.
 20. **Start with buffered chunked inference on the current model.** It needs no
     retraining. Latency is roughly chunk length plus right context. **(inference)**
     The alternative, cache-aware streaming, needs fine-tuning with chunk-aware
-    look-ahead (causal convolutions, limited `att_context_size`). NeMo shows one model
+    look-ahead (causal convolutions, limited `att_context_size`). The training toolkit shows one model
     can be trained with several look-aheads ([70,13] down to [70,0]) and switched at
     run time, and that about 6 s of left context comes close to full context.
-    CS224S lec 9 gives under 200 ms as the dialogue target. Recitation tracking can
+    course lec 9 gives under 200 ms as the dialogue target. Recitation tracking can
     probably accept around 0.5-1 s. **(inference)**
 21. **Normalization in streaming.** Per-feature normalization over a whole utterance
     is not available live. Use running statistics, or fixed statistics measured on
@@ -704,14 +691,14 @@ as saying it.
 22. **Tracking needs alignment, not transcription.** Since the expected text is known,
     live tracking can run forced alignment incrementally against the next few words,
     which tolerates CTC spikes better than greedy decoding. This follows from the
-    noisy-channel view (CS224S lec 9), where the text prior here is near-certain.
+    noisy-channel view (course lec 9), where the text prior here is near-certain.
     **(inference)**
 
 ### 7.7 ONNX int8 export to phones
 
-23. **Export the CTC path only, and quantize after a feature-parity check.** NeMo
+23. **Export the CTC path only, and quantize after a feature-parity check.** the training toolkit
     exports a CTC-only graph from hybrid models (`decoder_type: ctc`) and adds
-    `cache_support` for streaming. CS224S lec 11: small models run on phones.
+    `cache_support` for streaming. course lec 11: small models run on phones.
     **(inference)** for the following:
     - Decide whether the mel front end goes inside the graph or in app code (point 5).
     - Measure the int8 effect on the margins and posteriors the checker uses, not only
@@ -723,13 +710,13 @@ as saying it.
 
 24. **Metrics.**
     - Token error rate on sound tokens (a PER over the 81 tokens), standard
-      (I + S + D) / N as in SLP 16.6. Be explicit if MFA's PER with double-weighted
+      (I + S + D) / N as in SLP 16.6. Be explicit if the HMM aligner's PER with double-weighted
       substitutions is used for alignment checks instead.
     - Word-flag precision and recall, plus the **false-flag rate on correct phone
       recitations**, the project's key number.
     - Report each by channel condition (studio, phone, headset, codec) and by letter
       class.
-    - Normalize text consistently before scoring (HF Unit 5). **(inference)** for the
+    - Normalize text consistently before scoring (Audio course Unit 5). **(inference)** for the
       choice of metrics.
 25. **Significance.** Compare two checkpoints on the same clips with a matched-pairs
     test over many short segments (SLP 16.6, MAPSSWE: more than 50 segments, errors
@@ -740,11 +727,11 @@ as saying it.
 
 ### Top priorities (summary)
 
-1. Band-limit and codec augmentation with varied cutoffs (NeMo `nb_augmentation_prob`
+1. Band-limit and codec augmentation with varied cutoffs (the training toolkit `nb_augmentation_prob`
    and `TranscodePerturbation`). Fix the 4 kHz vs "8 kHz" ambiguity in `degrade()`.
 2. One shared resampler and a test that the app's features match training features.
 3. Stop measuring madd from CTC frame counts. Use span-to-next-token or acoustic
-   measurement, calibrated against MFA or hand-marked boundaries.
+   measurement, calibrated against the HMM aligner or hand-marked boundaries.
 4. Add posterior margins and an input-bandwidth feature to the word verifier, and
    train it on correct phone recitations.
 5. Track the false-flag rate on correct phone audio by channel and letter class, with
@@ -752,12 +739,12 @@ as saying it.
 
 ### Access notes
 
-- MFA "Concepts" pages are empty ("under construction"). HMM details were taken from
+- The HMM aligner's "Concepts" pages are empty ("under construction"). HMM details were taken from
   the training config and implementation pages.
-- The NeMo API reference page renders without class details, so preprocessor and
-  augmentor defaults were read from NeMo source on GitHub (main branch).
-- The ESPnet TEMPLATE README returned 404, so stages were read from `asr.sh`.
+- The toolkit's API reference page renders without class details, so preprocessor and
+  augmentor defaults were read from the toolkit source (main branch).
+- The third toolkit's TEMPLATE README returned 404, so stages were read from `asr.sh`.
 - The videos in the series were not watched. Notes come from the repository's lesson
   list and slide decks.
-- Several CCRMA subpages were read only in part, such as the minimum-length bounds
+- Several pages of the signal-processing books were read only in part, such as the minimum-length bounds
   for resolving sinusoids and the ERB formula.

@@ -1,13 +1,14 @@
 # Study notes: Quran recitation sources (for Qaf-ft)
 
 Eleven sources on Quran recitation data, models, checking, cutting and tracking, read at the
-source. They add to `docs/datasets.md`, `docs/data_licenses.md`, `docs/how_others_build.md`
-and `docs/research_summary.md`. Facts already recorded there are not repeated; points that
+source. They add to `docs/datasets.md`, `docs/how_others_build.md` and
+`docs/research_summary.md`. Facts already recorded there are not repeated; points that
 correct or extend them are marked **Flag**.
 
 Conventions
 
-- Works are named by title, arXiv id or dataset/model id. People are named by role only.
+- Datasets, models and their papers are named by the project's labels (see `docs/datasets.md`).
+  People are named by role only.
 - Anything that goes beyond what a source states is marked **(inference)**.
 - "Ordinary reciter" means a non-expert reciting on a phone, the project's target user.
 - PER = phoneme (sound) error rate. FR = false rejection (a correct sound flagged).
@@ -16,25 +17,25 @@ How each source was read
 
 | # | Source | How read |
 |---|---|---|
-| 1 | arXiv 2509.00094 v2 | Full HTML, all sections and appendices (Tables 1-17, Algorithm 1) |
-| 2 | arXiv 2506.07722 v2 | Full HTML. v2 is the latest version; no separate "v2 paper" exists. QuranMB.v2 (the 2026 test set) is described only on the dataset cards |
-| 3 | arXiv 2305.06429 | Full PDF text (16 pages) |
-| 4 | "The Tarteel Dataset: Crowd-Sourced and Labeled Quranic Recitation" (OpenReview TAdzPkgnnV8, 2021) | **Full text not accessible**: the PDF is behind a browser check that was not bypassed. Read: abstract, metadata, both reviews and the decision through the OpenReview search API |
-| 5 | RetaSy/quranic_audio_dataset | Card README in full |
-| 6 | arXiv 2604.18932 v1 | Full HTML |
-| 7 | Quran-Lab/quranic-asr-benchmark | Public rendered card in full (gated files not opened) |
-| 8 | Quran-Lab/zipformer_p-arabic-v3 | Public rendered card in full (gated files not opened) |
-| 9 | github.com/yayaiu6/Real-Time-Quran-recitation-tracker-System | README, SEQUENCE_DETECTION.md, all backend Python files |
-| 10 | gitea.com/quraniio/quran-timing-helper | English half of the README in full, LICENSE, requirements; the 447 KB scripts were not read line by line |
-| 11 | NVIDIA case study "Automating Real-Time Arabic Speech Recognition" | Full page, plus the NVIDIA developer blog post it links to (now reachable; earlier threads found it blocked) |
+| 1 | The expert set's paper (v2) | Full HTML, all sections and appendices (Tables 1-17, Algorithm 1) |
+| 2 | The mdd_e paper (v2) | Full HTML. v2 is the latest version; no separate "v2 paper" exists. The 2026 version of the mdd_e test set is described only on the dataset cards |
+| 3 | A learner_b method paper | Full PDF text (16 pages) |
+| 4 | The phone set's paper (2021) | **Full text not accessible**: the PDF is behind a browser check that was not bypassed. Read: abstract, metadata, both reviews and the decision through the review site's search API |
+| 5 | The learner_a card | Card README in full |
+| 6 | The studio_d paper (v1) | Full HTML |
+| 7 | The bench_a card | Public rendered card in full (gated files not opened) |
+| 8 | The model_b card | Public rendered card in full (gated files not opened) |
+| 9 | An open live recitation tracker | README, sequence-detection doc, all backend Python files |
+| 10 | A word-timing helper tool | English half of the README in full, licence, requirements; the 447 KB scripts were not read line by line |
+| 11 | A vendor case study on real-time Arabic speech recognition | Full page, plus the vendor developer blog post it links to (now reachable; earlier threads found it blocked) |
 
 ---
 
-## 1. arXiv 2509.00094: "Automatic Pronunciation Error Detection and Correction of the Holy Quran's Learners Using Deep Learning"
+## 1. The expert set's paper
 
-**What it is.** The paper behind obadx/muaalem-annotated-v3, obadx/qdat_bench, the
-quran-transcript phonetizer and the muaalem models. Version read: v2, 27 Aug 2026. Paper
-licence CC BY 4.0. The authors call the Quran Phonetic Script (QPS) their main contribution.
+**What it is.** The paper behind the expert set, learner_b's benchmark subset, the phonetizer
+package and model_a. Version read: v2, 27 Aug 2026. The authors call the Quran Phonetic
+Script (QPS) their main contribution.
 
 **Quran Phonetic Script.**
 - Two output levels: a phoneme level (43 symbols, Table 10) and a sifat level of 10
@@ -57,16 +58,16 @@ licence CC BY 4.0. The authors call the Quran Phonetic Script (QPS) their main c
   99,072 tokens; 11 parallel levels need far fewer.
 
 **Data pipeline (848 h).** Covered in `datasets.md` and `how_others_build.md`. Additions:
-- Text source Tanzil, chosen over the KFGQPC text for stability.
+- Text source: a widely used open Quran text, chosen over another standard printed text for
+  stability.
 - 893 h collected before filtering; 22 reciters (15 from Egypt).
-- Off-the-shelf voice-activity detectors (Silero VAD, pyannote) worked poorly on recitation,
-  so they trained a w2v-BERT frame classifier on EveryAyah-derived pause labels (augmented
-  with Silero-style noise on 40% of clips, time stretch 0.8-1.5x, 1 s sliding windows). One
-  epoch, lr 5e-5, batch 50, max 20 s. Test on an unseen mushaf: accuracy 0.9935, F1 0.9948.
+- Off-the-shelf voice-activity detectors worked poorly on recitation, so they trained a
+  w2v-BERT frame classifier on pause labels derived from studio_b (augmented with background
+  noise on 40% of clips, time stretch 0.8-1.5x, 1 s sliding windows). One epoch, lr 5e-5,
+  batch 50, max 20 s. Test on an unseen mushaf: accuracy 0.9935, F1 0.9948.
 - Segmentation was checked by hand on 50-75 random clips per mushaf plus all clips under
   3 s and over 35 s; a mushaf under 99% was to be excluded (25.0 measured 90%).
-- Transcripts came from tarteel-ai/whisper-base-ar-quran (WER 5.75%), using 10 s windows
-  for clips over 30 s.
+- Transcripts came from model_d (WER 5.75%), using 10 s windows for clips over 30 s.
 - Tasmeea verification (Algorithm 1): for each segment, try start positions and window
   sizes in a 30-word window (6 words overlap) of the current surah, score
   1 - edit_distance / length, accept at > 0.85 and advance the pointer by the match; on
@@ -77,19 +78,19 @@ licence CC BY 4.0. The authors call the Quran Phonetic Script (QPS) their main c
 language model "because we aim to capture what the user actually said". Loss is a weighted
 sum: phonemes 0.4; shidda/rakhawa and tafkheem/tarqeeq 0.0605 each; the other eight
 0.069875 each. One epoch, adapter layer, AdamW, constant lr 5e-5, batch 64, bf16, clips
-up to 30 s (3k of 250k dropped), Silero-style noise plus TimeStretch and GainTransition. 7 h
-on one H200. Pilot runs on 4 mushafs found constant lr best and **SpecAugment "significantly
-degraded performance"**.
+up to 30 s (3k of 250k dropped), background noise plus TimeStretch and GainTransition. 7 h
+on one large data-centre GPU. Pilot runs on 4 mushafs found constant lr best and
+**SpecAugment "significantly degraded performance"**.
 
 **Results.**
 - Expert test (mushafs 19.0, 29.0, 30.0; male experts): phoneme PER 0.543%; sifat PER
   0.08-0.17%; "average PER" 0.21% is the mean of all 11 levels, so 10 easy binary levels pull
   it down.
-- qdat_bench (159 learners, one ayah, 120 women): phoneme PER 5.78% (bootstrap 6.03 ± 0.53);
-  sifat PER 0.93-3.10%; average 1.94%. Tajweed: noon mushaddadah F1 0.869 (partial class
-  recall 0.66, precision 1.00); qalqalah macro-F1 0.953; ikhfa average F1 0.453, with the
-  "partial ikhfa" class never predicted (recall 0) and plain noon recalled only 47%. Madd
-  RMSE in counts: natural madd 0.40-0.55, munfasil 0.69, aared 1.03.
+- learner_b benchmark (159 learners, one ayah, 120 women): phoneme PER 5.78% (bootstrap
+  6.03 ± 0.53); sifat PER 0.93-3.10%; average 1.94%. Tajweed: noon mushaddadah F1 0.869
+  (partial class recall 0.66, precision 1.00); qalqalah macro-F1 0.953; ikhfa average F1
+  0.453, with the "partial ikhfa" class never predicted (recall 0) and plain noon recalled
+  only 47%. Madd RMSE in counts: natural madd 0.40-0.55, munfasil 0.69, aared 1.03.
 - Error analysis (Fig. 10): boundaries near perfect; a missed fatha; madd runs come out
   unbalanced, with the last repeated symbol stretched.
 
@@ -97,16 +98,16 @@ degraded performance"**.
 0.8470 is `avg_tajweed_acc` over all 159 clips (120 women, 39 men). No women-only number is
 given. Treat the claim as unsupported.
 
-**Released items and licences.** Code, models and data are released (paper; dataset links in
-Table 2). The HF model card obadx/muaalem-model-v3_2 is an empty template tagged MIT; the
-GitHub repo obadx/quran-muaalem is under the QML 1.0 licence (Apache 2.0 plus conditions),
-as already in `data_licenses.md`. The repo's inference call takes the phonetized reference
-next to the audio; it is used to explain differences and to line up sifat, not to decode
-**(inference from the README code)**. The paper never states a licence for anything.
+**Released items.** Code, models and data are released (paper; dataset links in Table 2).
+The model_a card on the platform is an empty template; usage terms are kept with the source
+files. The code repository's inference call takes the phonetized reference next to the audio;
+it is used to explain differences and to line up sifat, not to decode **(inference from the
+README code)**.
 
 **Stated limitations.** Letter-specific attributes cannot be learned from correct speech:
 the model will not catch ض without istitala or ر without tikrar; rare rules (imala, rawm,
-tasheel) are thin; only male experts; Hafs only; qdat_bench has one annotator and one ayah.
+tasheel) are thin; only male experts; Hafs only; the learner_b benchmark has one annotator
+and one ayah.
 
 **Relevance.** The closest system to Qaf-ft: same label script, same training set, CTC
 with no language model. Its learner/expert gap (5.8% vs 0.54% PER, about 10x) is the same
@@ -114,22 +115,22 @@ shape as our phone gap. See Application (a).
 
 ---
 
-## 2. arXiv 2506.07722: "Towards a Unified Benchmark for Arabic Pronunciation Assessment: Quranic Recitation as Case Study" (IqraEval / QuranMB.v1)
+## 2. The mdd_e paper
 
-**What it is.** The organisers' paper for the IqraEval benchmark: a phoneme set, training
-data, the first public test set (QuranMB.v1) and SSL baselines. Version v2, 12 Jun 2025.
-Scope is Modern Standard Arabic reading of Quran text, **without tajweed**.
+**What it is.** The organisers' paper for the mdd_e task: a phoneme set, training data, the
+first public test set (mdd_e v1) and SSL baselines. Version v2, 12 Jun 2025. Scope is Modern
+Standard Arabic reading of Quran text, **without tajweed**.
 
 **Task.** Mispronunciation detection and diagnosis: recognise the phonemes actually said and
 compare with the target sequence.
 
 **Data.**
-- Training "CMV-Ar": 82.37 h of Common Voice 12.0 Arabic (Table 1: 79 h train, 3.33 h dev)
-  re-vowelized with an in-house vowelizer and assumed correct, plus Quran recitation samples.
+- Training set: 82.37 h of voices_a Arabic (Table 1: 79 h train, 3.33 h dev) re-vowelized
+  with an in-house vowelizer and assumed correct, plus Quran recitation samples.
 - TTS: seven single-speaker voices (5 male, 2 female); 26 h of correct speech plus 26 h with
   errors made by changing four random characters or diacritics per sentence from a
   confusion matrix (examples ت/ط, س/ص, غ/خ), built from phoneme-similarity data.
-- QuranMB.v1 test: 98 verses read by 18 native speakers (**14 women, 4 men**), about 2.2 h,
+- mdd_e v1 test: 98 verses read by 18 native speakers (**14 women, 4 men**), about 2.2 h,
   in MSA at normal pace, ignoring tajweed, deliberately producing the error the recording
   tool highlighted; speakers read each sentence silently first.
 - Phoneme set: an MSA TTS phonetizer reduced to 68 phonemes (emphatic-context vowel
@@ -142,17 +143,16 @@ Adam lr 1e-4, batch 16, 12.5k updates, greedy decoding.
 **Metrics.** Hierarchical MDD counts: true accept, false reject, false accept, correct and
 error diagnosis; precision = TR/(TR+FR), recall = TR/(TR+FA), F1.
 
-**Results (Table 2).** Best: mHuBERT on CMV-Ar+TTS, F1 29.88%, precision 18.70%, recall
+**Results (Table 2).** Best: mHuBERT on voices_a+TTS, F1 29.88%, precision 18.70%, recall
 74.29%, **false rejection of correct phonemes 12.65%**, PER 16.42%. TTS-only mHuBERT: F1 29.00.
 All models: precision 13-19%, FR 12.6-21.1%.
 
-**Licence.** Paper CC BY 4.0. Data terms are in `data_licenses.md` (CC BY-NC; label files
-with no licence).
+**Usage terms.** Usage terms are kept with the source files.
 
 **Limitations.** Acted errors; MSA, not recitation; mostly women speakers; frozen encoders;
 no speaker or confidence analysis.
 
-**Flag.** `research_summary.md` quotes 1.75% phoneme false rejection for the "IQRA 2026
+**Flag.** `research_summary.md` quotes 1.75% phoneme false rejection for the "2026 mdd_e task
 winner". That figure is not in this paper; it comes from the later challenge. The paper's
 own baselines reject 12.65% or more of correct phonemes.
 
@@ -162,17 +162,17 @@ alphabet.
 
 ---
 
-## 3. arXiv 2305.06429: "Mispronunciation Detection of Basic Quranic Recitation Rules using Deep Learning"
+## 3. A learner_b method paper
 
-**What it is.** A method paper that uses the QDAT data (it is not the QDAT release itself).
-Three rules: madd munfasil ("separate stretching", 4-5 counts), noon mushaddadah ("tight
-noon", 2-count ghunnah) and ikhfa ("hide").
+**What it is.** A method paper that uses the learner_b data (it is not the learner_b release
+itself). Three rules: madd munfasil ("separate stretching", 4-5 counts), noon mushaddadah
+("tight noon", 2-count ghunnah) and ikhfa ("hide").
 
-**Data.** QDAT: more than 1,500 clips of part of 5:109 by speakers of both genders and
-different ages, **recorded through a messaging app, WAV, 11 kHz, mono, 16-bit**. Published at
-kaggle.com/datasets/annealdahi/quran-recitation (licence not stated in the paper).
+**Data.** learner_b's parent set: more than 1,500 clips of part of 5:109 by speakers of both
+genders and different ages, **recorded through a messaging app, WAV, 11 kHz, mono, 16-bit**.
+Published on the platform.
 
-**Method.** Pre-emphasis 0.97, MFCC (32 ms Hamming frames, 40 mel filters), three 256-unit
+**Method.** Pre-emphasis 0.97, MFCC (32 ms tapered frames, 40 mel filters), three 256-unit
 LSTM layers, three dense layers (16, 16, 8), dropout 0.2, one sigmoid output per rule,
 RMSprop lr 0.0005. **Random 90/10 train/test split of clips.**
 
@@ -180,26 +180,26 @@ RMSprop lr 0.0005. **Random 90/10 train/test split of clips.**
 95/95/97). Baselines on the same split: random forest 91/83/91, KNN 91/81/94, SVM 81/71/85,
 logistic regression 88/79/91.
 
-**Licence.** Not stated for the paper or the data.
+**Usage terms.** Not stated in the paper.
 
 **Limitations (inference).** Each speaker recorded the same verse about ten times
-(`datasets.md`, `obadx/qdat`), so a random clip split puts the same voices in train and test.
+(`datasets.md`, learner_b), so a random clip split puts the same voices in train and test.
 One verse, one judgement per rule per clip, no location.
 
-**Flag.** `how_others_build.md` §4 says simple classifiers on QDAT "look far better than they
-generalise". The likely cause is this speaker leakage **(inference)**. Compare the speaker-
-disjoint qdat_bench result in source 1: ikhfa F1 0.45, not 95%.
+**Flag.** `how_others_build.md` §4 says simple classifiers on learner_b "look far better than
+they generalise". The likely cause is this speaker leakage **(inference)**. Compare the
+speaker-disjoint learner_b benchmark result in source 1: ikhfa F1 0.45, not 95%.
 
-**Relevance.** QDAT and qdat_bench audio is narrowband messaging-app audio (11 kHz, so
-nothing above 5.5 kHz). That makes qdat_bench a phone-like test, not a studio one
-**(inference)**.
+**Relevance.** learner_b audio (both the parent set and the benchmark subset) is narrowband
+messaging-app audio (11 kHz, so nothing above 5.5 kHz). That makes the learner_b benchmark a
+phone-like test, not a studio one **(inference)**.
 
 ---
 
-## 4. "The Tarteel Dataset: Crowd-Sourced and Labeled Quranic Recitation" (2021)
+## 4. The phone set's paper (2021)
 
-**What it is.** A submission to the NeurIPS 2021 Datasets and Benchmarks track (OpenReview
-TAdzPkgnnV8), **rejected**. Not on arXiv. Only the abstract, reviews and decision could be read.
+**What it is.** A submission to a 2021 machine-learning conference's datasets and benchmarks
+track, **rejected**. Not on arXiv. Only the abstract, reviews and decision could be read.
 
 **Data (abstract).** 25,000 clips, 67.39 h, "a wide variety of recitation styles,
 proficiencies, and speeds", collected over six months from more than 1,200 individuals of
@@ -214,25 +214,25 @@ Quran audio and text and gives baseline results.
   limits. Reviewers could not tell what was finally used.
 - Demographic data is "hardly present" in the download. Text labels and phoneme labels are
   under-explained.
-- The only experiment combined this data with EveryAyah.
+- The only experiment combined this data with studio_b.
 - Decision: reject, for lack of analysis of crowd verification and automatic labelling.
 
 **Key numbers.** 25k clips, 67.39 h, 1,200+ speakers. No baseline numbers could be read.
 Source 1 lists it as "v1" of this data (25K utterances, 68 h).
 
-**Licence.** Not readable. The forum points to a dataset URL that now returns 404.
+**Usage terms.** Not readable. The forum points to a dataset address that now returns 404.
 
-**Limitations.** Labels are the intended verse with weak checks, the same problem as
-tarteel-ai/tlog. The tracker README (source 9) claims the paper reports ">98% accuracy in
+**Limitations.** Labels are the intended verse with weak checks, the same problem as the
+phone set. The tracker README (source 9) claims the paper reports ">98% accuracy in
 word-level alignment"; that could not be checked.
 
 **Relevance.** Shows that this kind of app-collected data has been weakly labelled from the
-start. It is a different and much smaller set than tarteel-ai/tlog (about 393k clips); how
+start. It is a different and much smaller set than the phone set (about 393k clips); how
 the two relate is not stated anywhere read.
 
 ---
 
-## 5. RetaSy/quranic_audio_dataset (card)
+## 5. The learner_a card
 
 Mostly covered in `datasets.md` §13 and `how_others_build.md` §3. Additions from the card:
 - A third quality number: **0.89 agreement between the algorithm's labels and expert
@@ -244,41 +244,42 @@ Mostly covered in `datasets.md` §13 and `how_others_build.md` §3. Additions fr
   results could be split by gender for labelled rows.
 - The annotation platform is named on the card; the collection app is a volunteer-based
   crowdsourcing API.
-- Licence: none on the card (unchanged).
+- Usage terms: none on the card (unchanged).
 
 **Relevance.** The weighted vote (annotator accuracy on control tasks) is a usable recipe
 for our own labelling. Data stays evaluation-only until terms are obtained.
 
 ---
 
-## 6. arXiv 2604.18932: "Tadabur: A Large-Scale Quran Audio Dataset"
+## 6. The studio_d paper
 
-**What it is.** The paper for FaisaI/tadabur. v1, 21 Apr 2026. **The paper is CC BY-NC-SA
-4.0**; the dataset card says CC BY-NC 4.0 (`datasets.md` §3).
+**What it is.** The paper for studio_d. v1, 21 Apr 2026. Usage terms are kept with the
+source files (`datasets.md` §3).
 
-**Method.** Long recordings from public archives; Gemini 2.5 Flash classifies titles and
-descriptions and pulls out surah and reciter; Whisper large-v3 with WhisperX gives word
-timestamps; an "Ayah Alignment Module" matches transcript segments to canonical ayah text
-from a public Quran API by cosine similarity of SILMA text embeddings; a recitation-stop
-segmenter (the 2509.00094 segmenter approach) fixes each clip end after adding a 5 s buffer;
-near-duplicates per reciter and ayah (EAT audio embeddings, cosine > 0.9) are merged with
-union-find.
+**Method.** Long recordings from public archives; a large language model classifies titles
+and descriptions and pulls out surah and reciter; Whisper large-v3 with a word-timestamp
+add-on gives word timestamps; an "Ayah Alignment Module" matches transcript segments to
+canonical ayah text from a public Quran API by cosine similarity of text embeddings; a
+recitation-stop segmenter (the expert set's paper's segmenter approach) fixes each clip end
+after adding a 5 s buffer; near-duplicates per reciter and ayah (audio embeddings, cosine
+> 0.9) are merged with union-find.
 
 **Pipeline evaluation (Table 1, five professional reciters).** Ayah coverage: embedding
-matching with their own fine-tuned ASR 96.63%; with tarteel-ai Whisper 95.50%; with Whisper
-small 82.57%. Fuzzy text matching: 86.03%, 87.23% and 72.80%. Coverage means "found and
-cut"; whether each cut is correct is not measured.
+matching with their own fine-tuned ASR 96.63%; with model_d's larger sibling (a Quran-tuned
+Whisper) 95.50%; with Whisper small 82.57%. Fuzzy text matching: 86.03%, 87.23% and 72.80%.
+Coverage means "found and cut"; whether each cut is correct is not measured.
 
-**ASR baselines on Tadabur (Table 3, WER/CER after removing diacritics).** Whisper-Quran 74M
-8.7/6.5; Cohere Transcribe 11.2/8.1; Voxtral Mini 15.1/11.2; VibeVoice-ASR 24.3/14.0;
-Qwen3-ASR-1.7B 25.2/9.9; Whisper small 29.2/16.1; MMS 1B 51.1/16.6; XLSR-53 Arabic 57.4/21.9.
+**ASR baselines on studio_d (Table 3, WER/CER after removing diacritics).** A Quran-tuned
+Whisper (74M) 8.7/6.5; five general ASR models 11.2/8.1, 15.1/11.2, 24.3/14.0, 25.2/9.9;
+Whisper small 29.2/16.1; two multilingual self-supervised wav2vec 2.0 models 51.1/16.6 and
+57.4/21.9.
 
 **Related-work survey.** Thin. It lists only three datasets: a 6,689-clip, 12-reciter
-Kaggle reciter-identification set; SLR132 (226,129 ayah clips, 30 reciters, no word timing);
-Buraaq/Quran-MD (187,080 samples, 30 reciters). It leaves out EveryAyah, tarteel-ai/tlog,
-muaalem-annotated-v3, QDAT, RetaSy and IqraEval. **`datasets.md` is far more complete; nothing
-here needs adding to it** apart from the Buraaq/Quran-MD reference (arXiv 2601.17880,
-professional reciters).
+reciter-identification set on the platform; studio_f (226,129 ayah clips, 30 reciters, no
+word timing); another multi-reciter set (187,080 samples, 30 reciters). It leaves out
+studio_b, the phone set, the expert set, learner_b, learner_a and the mdd_e task.
+**`datasets.md` is far more complete; nothing here needs adding to it** apart from the
+187,080-sample multi-reciter set (professional reciters).
 
 **Limitations (stated).** Some reciters miss ayahs (mainly ASR failures); word timestamps
 "not always precise" because the aligner was not built for Quran audio.
@@ -292,60 +293,62 @@ professional reciters).
   ayah, and it is why it must never be used to judge a word.
 
 **Relevance.** A recipe for cutting long recitations (find the ayah, then refine the end
-with a pause detector). No use as a test set. Licence: free only (`data_licenses.md`).
+with a pause detector). No use as a test set. Not used for training.
 
 ---
 
-## 7. Quran-Lab/quranic-asr-benchmark (card)
+## 7. The bench_a card
 
-Configs, quirks and licence layers are in `datasets.md` §10. Additions:
-- The card's warning: "**tlog is the one that matters for apps; studio numbers flatter
-  every model.**" `tlog_holdout` is called "the hard, real-world case".
+Configs and quirks are in `datasets.md` §10. Additions:
+- The card's warning: "**[the phone config] is the one that matters for apps; studio numbers
+  flatter every model.**" The phone holdout clips are called "the hard, real-world case".
 - Scoring: WER and CER after stripping marks, Quranic signs and tatweel and unifying hamza
   forms and alef maqsura; an extra "alef-insensitive" column strips alef to remove
   Uthmani-vs-Imlaei spelling differences.
 - Run rules: Arabic language hint for every model; greedy or default decoding; **no
   language-model rescoring and no forced alignment; no model ever sees the reference.**
-- Leaderboard space: Muno459/quranic-asr-leaderboard (older id) / Quran-Lab leaderboard.
-- v1.1 fixed ten `qul_alnufais` references where the reciter repeats the ayah (in one clip:
-  51:56, 51:57, 51:56). The wrong references came from upstream per-ayah files that were
-  presented as human-reviewed. Lesson: per-ayah clips from any source can hold repeats.
+- A public leaderboard space accompanies the benchmark on the platform.
+- v1.1 fixed ten references in the recitation-library holdout config where the reciter
+  repeats the ayah (in one clip: 51:56, 51:57, 51:56). The wrong references came from
+  upstream per-ayah files that were presented as human-reviewed. Lesson: per-ayah clips from
+  any source can hold repeats.
 
-**Flag.** The Hub lists Abdou/quran-asr-small and Abdou/quran-asr-tiny as "trained or
-fine-tuned on" the benchmark. On the model cards this comes from evaluation metadata (the
-small model's training data lists only tarteel-ai/tlog and IqraEval/Iqra_train, and it says
-no benchmark recording was used). That card also reports that **one phone clip of the
+**Flag.** The platform lists two small Quran ASR models as "trained or fine-tuned on" the
+benchmark. On the model cards this comes from evaluation metadata (the smaller model's
+training data lists only the phone set and the mdd_e task's training set, and it says no
+benchmark recording was used). That card also reports that **one phone clip of the
 benchmark (36:71) was the same recording as one in its training data, uploaded twice under
-different ids.** So tarteel-ai/tlog has duplicate recordings under different file names;
+different ids.** So the phone set has duplicate recordings under different file names;
 removing the 200 holdout ids by name is not enough.
 
 **Relevance.** The idea of "correct recitation tested separately, every legal reading
 accepted, phone audio reported separately" is already adopted. The data stays on hold
-(NPL-1.2 binds a model that is merely evaluated on it).
+(its terms bind a model that is merely evaluated on it).
 
 ---
 
-## 8. Quran-Lab/zipformer_p-arabic-v3 (card)
+## 8. The model_b card
 
-**What it is.** A 65.5M-parameter streaming Zipformer2 with a CTC head that outputs a
-251-symbol phonetic alphabet built on quran-transcript (Hafs, murattal). "No language model,
-anywhere": no transducer, no rescoring, no text prior. Superseded by "TajweedFormer V4"
-(offered through an SDK); this card stays as a reference. v3.1 is a madd fine-tune with the
-same interface.
+**What it is.** A 65.5M-parameter streaming Conformer-family encoder with a CTC head that outputs a
+251-symbol phonetic alphabet built on the phonetizer package (Hafs, murattal). "No language
+model, anywhere": no transducer, no rescoring, no text prior. Superseded by a newer version
+of model_c (offered through an SDK); this card stays as a reference. v3.1 is a madd
+fine-tune with the same interface.
 
 **Architecture and streaming.** Cache-aware streaming CTC; trained only at chunk sizes 8,
-16 and 24 frames; ONNX export for sherpa-onnx (chunk 48 input frames, 0.48 s per call);
-input must be 80-dim Kaldi fbank (Povey window): "a slaney-mel front end roughly doubles the
-error rate". CoreML packages (float8 63 MB, float16 124 MB) split into two functions so that
-both run on the phone neural accelerator; the previous version took 6.8 ms per chunk on a recent high-end
-phone (70x real time). Numerical fixes for fp16 hardware are listed (overflow guard,
-max-subtracted log-softmax, no fp32 epsilons). `tokens.txt` is required because blank is id
-250, not 0. A `decode_with_confidence.py` script gives per-symbol confidence; the card
-advises using the margin at the emission peak, since margins sampled elsewhere differ
-between runtimes.
+16 and 24 frames; ONNX export for an on-device inference runtime (chunk 48 input frames,
+0.48 s per call); input must be 80-dim log-mel filterbank features computed in the classic
+speech-toolkit style with its default window: "a slaney-mel front end roughly doubles the
+error rate". Packages in the phone's native model format (float8 63 MB, float16 124 MB) are
+split into two functions so that both run on the phone neural accelerator; the previous
+version took 6.8 ms per chunk on a recent high-end phone (70x real time). Numerical fixes for
+fp16 hardware are listed (overflow guard, max-subtracted log-softmax, no fp32 epsilons).
+`tokens.txt` is required because blank is id 250, not 0. A `decode_with_confidence.py`
+script gives per-symbol confidence; the card advises using the margin at the emission peak,
+since margins sampled elsewhere differ between runtimes.
 
 **Training data.** About 5,400 effective hours per epoch for 10 epochs: complete mushafs by
-36 EveryAyah reciters, 1,161 more reciters cut from public archives, real phone recordings,
+36 studio_b reciters, 1,161 more reciters cut from public archives, real phone recordings,
 concatenated multi-ayah windows, same-ayah repetition clips, and a broad-Arabic tier; noise,
 reverb, wind, speed and tempo augmentation. Average of the last 3 epochs.
 
@@ -354,48 +357,51 @@ reverb, wind, speed and tempo augmentation. Average of the last 3 epochs.
 reciter did not reproduce on the shipped weights and was corrected. An audit found 24 stray
 clips of the "absent" studio reciters in training. The emphatic-consonant gap (ص ض ط ظ vs
 plain letters) is "statistically indistinguishable from zero".
-On qdat_bench, madd RMSE (counts) vs muaalem-model-v3_2: qalo alif 0.210 vs 0.449; qalo waw
-0.514 vs 0.456; allam alif 0.363; munfasil 0.887 vs 0.687; aared 1.458.
+On the learner_b benchmark, madd RMSE (counts) vs model_a: qalo alif 0.210 vs 0.449; qalo
+waw 0.514 vs 0.456; allam alif 0.363; munfasil 0.887 vs 0.687; aared 1.458.
 
 **Honest limitations (quoted points).**
 1. Trained on correct recitation with canonical labels, it "tends to transcribe the rule
-   rather than the deviation": on qdat_bench it reported full ikhfa in **81 of 94** clips
-   where annotators heard a plain noon.
+   rather than the deviation": on the learner_b benchmark it reported full ikhfa in **81 of
+   94** clips where annotators heard a plain noon.
 2. Free-choice madd (munfasil, aared) is unreliable in the token stream because labels fix
    them at 4 counts while reciters legitimately choose 2, 4 or 6. "**Duration grading should
    be done from forced-alignment timing, not from the emitted symbol run-length.**"
-3. "**Under-12 reciters score 2 to 3 times worse than adults on qdat_bench.**"
+3. "**Under-12 reciters score 2 to 3 times worse than adults on [the learner_b
+   benchmark].**"
 4. Streaming chunks match or beat full context in domain; on out-of-domain audio full
    context is about 2 PER points better.
 
-**Licence.** Quran-Lab NPL-1.2, gated. The gate also requires not presenting the output as
-an authoritative religious ruling. Same binding issue as `data_licenses.md` "On hold".
+**Usage terms.** Gated; usage terms are kept with the source files. The gate also requires
+not presenting the output as an authoritative religious ruling, so it stays on hold.
 
 **Flag (inference).** Phone PER (3.65%) is lower than unseen-professional PER (9.10%). The
-training data includes real phone recordings, very likely from the same app pool as
-`tlog_holdout`, which has no speaker ids and contains duplicates (source 7). The phone number
-may be optimistic; the unseen-reciter number is the more honest generalisation figure.
+training data includes real phone recordings, very likely from the same app pool as the
+phone holdout clips, which have no speaker ids and contain duplicates (source 7). The phone
+number may be optimistic; the unseen-reciter number is the more honest generalisation figure.
 
 **Relevance.** The best public evidence on streaming size, front-end and phone export for a
 model of our size class, and the source of the duration-grading advice. See Application (d).
 
 ---
 
-## 9. github.com/yayaiu6/Real-Time-Quran-recitation-tracker-System
+## 9. An open live recitation tracker
 
-**What it is.** A Flask + Socket.IO web demo that highlights words as they are recited and
-warns on skipped ayahs or the wrong page. MIT licence. 151 stars. No evaluation data.
+**What it is.** A small Python web-server demo with websockets that highlights words as they
+are recited and warns on skipped ayahs or the wrong page. Open source. 151 stars. No
+evaluation data.
 
 **Method.**
 - Browser records WebM chunks; the server converts them to 16 kHz WAV, keeps a **cumulative
   8 s sliding buffer** and re-transcribes the whole buffer on every chunk. ASR is a cloud
-  Whisper API by default, or a local NeMo Conformer-CTC trained on Arabic Common Voice (not
-  Quran). Chunks below an RMS energy threshold (0.01) are dropped as silence.
+  Whisper API by default, or a local Conformer-CTC trained with the training toolkit on
+  voices_a Arabic (not Quran). Chunks below an RMS energy threshold (0.01) are dropped as
+  silence.
 - Text is normalised (diacritics, tatweel and punctuation removed). Isti'adha and basmala are
   stripped first if the opening words match them at average similarity 0.7.
 - Candidate segments of 5-25 Quran words (stride 3) are scored as
-  0.7 x (1 - Levenshtein/max length) - 0.3 x (length difference/max length); then a
-  Needleman-Wunsch alignment maps spoken words to Quran words; a word is "correct" if its
+  0.7 x (1 - edit distance/max length) - 0.3 x (length difference/max length); then a global
+  sequence alignment maps spoken words to Quran words; a word is "correct" if its
   similarity is at least the word threshold (0.45 in the app config; the engine default is 0.7).
 - **Tracking mode** searches 60 words ahead and 15 behind the anchor. After 3 chunks with
   confidence below 0.4 it switches to **search mode** over the whole displayed page.
@@ -420,14 +426,14 @@ search, skip rules). The scoring layer is not usable for checking. See Applicati
 
 ---
 
-## 10. gitea.com/quraniio/quran-timing-helper
+## 10. A word-timing helper tool
 
 **What it is.** A command-line tool that makes word-level timing files (verse, word
 position, start and end in ms) for complete surah recordings by expert reciters, to drive
-word highlighting. Developed on Mac; 0 stars.
+word highlighting. Developed on a desktop computer; 0 stars.
 
 **Pipeline.**
-1. Whisper large-v3 (or a Quran Whisper from the Hub, default IJyad/whisper-large-v3-Tarteel)
+1. Whisper large-v3 (or a Quran-tuned Whisper from the platform, the default)
    transcribes the whole surah with word timestamps, **prompted with up to 100 words of the
    expected Quran text** (plus isti'adha and basmala).
 2. The transcript is aligned to the known text by dynamic programming (min score 0.55,
@@ -438,7 +444,7 @@ word highlighting. Developed on Mac; 0 stars.
    gap with 600 ms padding); severe under-transcription (below 85% coverage, re-run without
    the prompt and keep whichever aligns more real words); madd word ends extended up to 1.8 s
    (3.5 s at verse end) and stopped at silences.
-4. **wav2vec2 CTC forced alignment** (default jonatasgrosman/wav2vec2-large-xlsr-53-arabic,
+4. **wav2vec2 CTC forced alignment** (default: a public Arabic wav2vec2 XLSR-53 model,
    character level) places words that are still estimated, by aligning the known text to the
    gap between two real anchors. Wider gaps (over 15 s) are cut into 45 s chunks. A full-surah
    CTC fallback runs when half the words lack real times (clips up to 2 min). Separate passes
@@ -451,10 +457,8 @@ word highlighting. Developed on Mac; 0 stars.
 
 **Numbers.** Thresholds only; no accuracy measurement is published.
 
-**Licence.** "Free-Use, Non-Commercial License" 1.0: use, modify and redistribute free of
-charge only; the condition reaches **"any product, service, application, or dataset built
-with it or derived from it (including timing files it generates)"**: no sale, no paid app,
-no paywall, no in-app purchases; keep the licence and attribution.
+**Usage terms.** Usage terms are kept with the source files. They reach anything built with
+the tool or derived from it, including the timing files it generates, so it is not used.
 
 **Limitations (inference).** Built for correct expert recitation: the text prompt and the
 "force the known text in" fallbacks hide skips and mistakes, which is right for highlighting
@@ -466,13 +470,14 @@ that Whisper timestamps alone are not enough at openings, long madds and repeate
 
 ---
 
-## 11. NVIDIA case study "Automating Real-Time Arabic Speech Recognition" (and linked blog)
+## 11. A vendor case study on real-time Arabic speech recognition
 
-**What it is.** A short vendor page about a Quran recitation app, plus a 2022 NVIDIA
-developer blog post on speech applications.
+**What it is.** A short vendor page about another app for Quran recitation, plus a 2022
+vendor developer blog post on speech applications.
 
-**Architecture (as stated).** A Quranic Arabic ASR model fine-tuned in NeMo, optimised with
-TensorRT, served with Riva on Triton Inference Server, on A100 and V100 GPUs. Server-side.
+**Architecture (as stated).** A Quranic Arabic ASR model fine-tuned with the vendor's
+training toolkit, optimised and served with the vendor's inference stack on data-centre
+GPUs. Server-side.
 
 **Lessons (blog).** On-device speech frameworks for phones were tried first and rejected:
 "designed more for commands and short sentences than precise recitations". A first custom
@@ -482,7 +487,7 @@ counts mistakes and links to similar passages.
 
 **Key number.** "4 percent WER", with no test set, audio type or date.
 
-**Licence.** Not applicable.
+**Usage terms.** Not applicable.
 
 **Limitations.** Marketing material: no architecture details, no evaluation method. A later
 third-party measurement in `research_summary.md` (9.56 WER overall, 16.17 on phone audio) is
@@ -499,7 +504,7 @@ Priorities: **P1** = do before or during the phone fine-tune; **P2** = next stag
 cutting, tracking); **P3** = later (tajweed, export). Nearly everything here is
 **(inference)** from the sources above; direct source facts are cited by number.
 
-### (a) What 2509.00094 implies for the checker and verifier
+### (a) What the expert set's paper implies for the checker and verifier
 
 1. **P1. Accept every legal reading before scoring a word.** Our 81 tokens carry madd length
    (ا2, ا4, ا5, ا6, ۥ4 and so on) taken from each training mushaf's settings. Ordinary
@@ -513,8 +518,9 @@ cutting, tracking); **P3** = later (tajweed, export). Nearly everything here is
    levels and is not comparable. The like-for-like figure is the phoneme level: 0.543% on
    three unseen expert mushafs vs our token error of 0.43% on two unseen reciters (different
    reciters and token sets, so only "same order"). The useful outside number is their
-   **5.78% phoneme PER on qdat_bench**. Expand our repeat tokens into their 43-symbol script
-   and report qdat_bench PER, so Qaf-ft has one directly comparable learner number.
+   **5.78% phoneme PER on the learner_b benchmark**. Expand our repeat tokens into their
+   43-symbol script and report learner_b benchmark PER, so Qaf-ft has one directly comparable
+   learner number.
 3. **P2. Sifat heads: a cheap side experiment, not a redesign.** In the training data the
    sifat are fixed functions of the phonemes (derived from text, source 1), so they add no
    new label information. Possible gains are regularisation and a second, partly independent
@@ -530,29 +536,30 @@ cutting, tracking); **P3** = later (tajweed, export). Nearly everything here is
 5. **P2. Training details worth testing on the phone fine-tune.** They found SpecAugment
    harmful and a constant lr best, on studio data only. Since our gap is the phone channel,
    test both choices again on phone clips rather than copying them. Their augmentations
-   (Silero-style noise, time stretch, gain transitions) are a cheap baseline.
+   (background noise, time stretch, gain transitions) are a cheap baseline.
 6. **P2. Verifier output.** Source 1 reports per-level error rates only, with no confidence
    or false-flag numbers, so it does not help set thresholds. Keep the fixed-false-flag
    thresholds and three-state output already planned.
 
-### (b) Test sets for honest evaluation, and their licence limits
+### (b) Test sets for honest evaluation, and their limits
 
-| Priority | Set | What it measures | Licence limit |
+| Priority | Set | What it measures | Limit |
 |---|---|---|---|
 | P1 | Own labelled phone clips (in progress) | The target: false flags per correct word on phones; real word mistakes | Private voices: keep local |
-| P1 | obadx/qdat_bench | Learners, 120 women, mixed ages, real mistakes in QPS; **narrowband 11 kHz messaging-app audio** (source 3), so a phone-like channel; 53 clips are fully correct, which allows a false-flag count | Apache 2.0, evaluation only (speaker leakage with obadx/qdat) |
-| P1 | Luxbg/quran-muaalem-aligned test_unseen | Studio generalisation to 2 unseen expert reciters | MIT |
-| P1 | Own tlog holdout from deepdml/tlog-clean-sf16k | Phone ASR accuracy, and checker false flags on clips that pass the agreement filter | CC BY 4.0 upstream; **remove duplicates by audio fingerprint, not file name** (source 7), and drop the 200 Quran-Lab holdout ids anyway |
-| P2 | MuazAhmad7/Surah_Ikhlas-Labeled_Dataset | Word-located real mistakes, 384 participants, 4 short ayahs | CC BY 4.0 |
-| P2 | RetaSy/quranic_audio_dataset (labelled part) | Clip-level correct vs mistake for non-Arab learners; gender field allows a split | No licence: report only, ask the authors first |
-| P3 | IqraEval/QuranMB.v2 | Letter and vowel substitution recall vs a public baseline (best F1 29.9%, FR 12.65%) | CC BY-NC; needs a mapping to the 68-symbol MSA set; acted, no tajweed, mostly women |
-| Hold | Quran-Lab tlog_holdout and zipformer comparisons | Phone ASR vs a public board | NPL-1.2 binds a model that is merely evaluated on it |
+| P1 | learner_b benchmark | Learners, 120 women, mixed ages, real mistakes in QPS; **narrowband 11 kHz messaging-app audio** (source 3), so a phone-like channel; 53 clips are fully correct, which allows a false-flag count | Evaluation only (speaker leakage with learner_b's parent set) |
+| P1 | The aligned expert set, unseen-reciter test split | Studio generalisation to 2 unseen expert reciters | Usage terms kept with the source files |
+| P1 | Own phone holdout from the phone set | Phone ASR accuracy, and checker false flags on clips that pass the agreement filter | **Remove duplicates by audio fingerprint, not file name** (source 7), and drop bench_a's 200 phone holdout clip ids anyway |
+| P2 | mdd_c | Word-located real mistakes, 384 participants, 4 short ayahs | Usage terms kept with the source files |
+| P2 | learner_a (labelled part) | Clip-level correct vs mistake for non-Arab learners; gender field allows a split | No stated terms: report only, ask the authors first |
+| P3 | mdd_e (v2) | Letter and vowel substitution recall vs a public baseline (best F1 29.9%, FR 12.65%) | Not for training; needs a mapping to the 68-symbol MSA set; acted, no tajweed, mostly women |
+| Hold | bench_a phone holdout clips and model_b comparisons | Phone ASR vs a public board | Its terms bind a model that is merely evaluated on it |
 
 Rules that follow from the sources:
 - Report studio and phone separately, always (source 7). Never let a studio number stand for
   the app.
-- When comparing with source 1 or 8 on qdat_bench, use the same metric (phoneme PER after
-  expanding repeats; madd RMSE in counts) and say that it is one ayah with one annotator.
+- When comparing with source 1 or 8 on the learner_b benchmark, use the same metric (phoneme
+  PER after expanding repeats; madd RMSE in counts) and say that it is one ayah with one
+  annotator.
 - Per-ayah clips can hold repeats even when "reviewed" (source 7 v1.1). Repeats must be a
   normal, not-flagged event in our scoring.
 
@@ -599,11 +606,11 @@ for highlighting and wrong for checking; agrees with `research_summary.md`).
    (source 8, explicit advice; source 1 Fig. 10 shows uneven madd runs). Align the expected
    tokens, measure each madd's duration, and divide by the reciter's own count length in the
    same ayah (estimated from 2-count natural madds or short vowels).
-2. **Grade only clear errors.** Best published madd RMSE on qdat_bench is 0.40-0.55 counts
-   for natural madd and 0.69-1.46 for munfasil and aared (sources 1, 8). That is close to one
-   count, which is the difference between legal choices. Flag only natural madd at roughly 1
-   count or less, lazim clearly under 4, and munfasil/aared below 2; accept 2/4/6 where the
-   rule allows.
+2. **Grade only clear errors.** Best published madd RMSE on the learner_b benchmark is
+   0.40-0.55 counts for natural madd and 0.69-1.46 for munfasil and aared (sources 1, 8). That
+   is close to one count, which is the difference between legal choices. Flag only natural
+   madd at roughly 1 count or less, lazim clearly under 4, and munfasil/aared below 2; accept
+   2/4/6 where the rule allows.
 3. **Check consistency within one recitation** (the same madd type should keep the same
    length), which needs no absolute threshold.
 4. **Leave out ikhfa in the first tajweed release.** Two independent models fail on it (F1
@@ -617,17 +624,17 @@ for highlighting and wrong for checking; agrees with `research_summary.md`).
 What the sources show:
 - The main training set is male experts only (source 1). Its learner benchmark is 75% women,
   but no per-gender result is given (the "84.7% on women" claim is a misreading, source 1 Flag).
-- Under-12 reciters score 2-3x worse than adults on qdat_bench (source 8), even for a model
-  trained on thousands of hours including phone audio.
-- QuranMB.v1 has 14 women of 18 speakers (source 2); RetaSy has a gender field (source 5);
-  qdat_bench has gender and age per clip (`datasets.md` §11).
+- Under-12 reciters score 2-3x worse than adults on the learner_b benchmark (source 8), even
+  for a model trained on thousands of hours including phone audio.
+- mdd_e v1 has 14 women of 18 speakers (source 2); learner_a has a gender field (source 5);
+  the learner_b benchmark has gender and age per clip (`datasets.md` §11).
 
 Recommendations:
 1. **P1.** Report every checker metric split by gender and by age band (under 12, 12-17,
-   adult) on qdat_bench and on our own phone clips. Track the false-flag rate per group
-   against the 0.1% per-word target, not only the average.
-2. **P1.** In the phone fine-tune, check how much of deepdml/tlog-clean-sf16k is women's and
-   children's speech (sample and label a few hundred clips by ear), since no card says.
+   adult) on the learner_b benchmark and on our own phone clips. Track the false-flag rate per
+   group against the 0.1% per-word target, not only the average.
+2. **P1.** In the phone fine-tune, check how much of the phone set is women's and children's
+   speech (sample and label a few hundred clips by ear), since no card says.
 3. **P2.** Add pitch shift and vocal-tract-length perturbation to augmentation to cover higher
    voices; test the gain on the women/children slice only.
 4. **P2.** For our own collection, aim for clips from women and children with consent, and
@@ -638,11 +645,11 @@ Recommendations:
 
 1. Accept all legal readings (free-choice madd and sakt) before scoring any word; measure how
    many current phone false flags this removes. (a1)
-2. Build the phone test from tlog with fingerprint deduplication, and add qdat_bench as a
-   phone-like, learner, mostly-women test with a false-flag count on its 53 correct clips.
-   (b)
-3. Report qdat_bench phoneme PER in the 43-symbol script, next to 2509.00094's 5.78%, split
-   by gender and age. (a2, e1)
+2. Build the phone test from the phone set with fingerprint deduplication, and add the
+   learner_b benchmark as a phone-like, learner, mostly-women test with a false-flag count on
+   its 53 correct clips. (b)
+3. Report learner_b benchmark phoneme PER in the 43-symbol script, next to the expert set's
+   paper's 5.78%, split by gender and age. (a2, e1)
 4. Cut long recitations by free decode, moving-pointer match on sound tokens, and score-gated
    forced alignment; never prompt with the expected text. (c)
 5. Live mode: position-only display with a repeat-tolerant state machine; per-word verdicts
@@ -654,14 +661,12 @@ Recommendations:
 
 | Doc | Point | Source |
 |---|---|---|
-| research_summary.md | "IQRA 2026 winner 1.75% false reject" is not in arXiv 2506.07722; that paper's baselines reject 12.65-21% of correct phonemes | 2 |
+| research_summary.md | "2026 mdd_e task winner 1.75% false reject" is not in the mdd_e paper; that paper's baselines reject 12.65-21% of correct phonemes | 2 |
 | research_summary.md | "Ship as advisory" for ikhfa is too generous; two models fail on it | 1, 8 |
-| research_summary.md | NVIDIA pages are now reachable; they hold no architecture detail beyond NeMo + TensorRT + Riva on Triton, server-side, 300 ms latency goal | 11 |
-| how_others_build.md §4 | QDAT 95-99% results come from a random clip split with about ten takes per speaker (speaker leakage) | 3 |
-| datasets.md §11 | qdat_bench audio derives from 11 kHz messaging-app recordings, so it is narrowband | 3 |
-| datasets.md §2 / §10 | tlog contains the same recording under different ids; deduplicate by audio, not file name | 7 (via a model card) |
+| research_summary.md | The vendor pages are now reachable; they hold no architecture detail beyond the vendor's training toolkit and inference stack, server-side, 300 ms latency goal | 11 |
+| how_others_build.md §4 | learner_b 95-99% results come from a random clip split with about ten takes per speaker (speaker leakage) | 3 |
+| datasets.md §11 | The learner_b benchmark audio derives from 11 kHz messaging-app recordings, so it is narrowband | 3 |
+| datasets.md §2 / §10 | The phone set contains the same recording under different ids; deduplicate by audio, not file name | 7 (via a model card) |
 | datasets.md §13 | Add the 0.89 algorithm-vs-expert agreement; per-annotator scores are in `annotation_metadata` | 5 |
-| datasets.md §3 | Tadabur paper is CC BY-NC-SA 4.0 (dataset CC BY-NC 4.0); the paper is unclear which ASR built the released data | 6 |
-| data_licenses.md | Add quran-timing-helper as "not used": its free-use licence also covers timing files it generates | 10 |
-| data_licenses.md | The zipformer gate adds a second condition: output must not be presented as an authoritative religious ruling | 8 |
-| 2509.00094 citations | "84.7% accuracy on female reciters" is the all-clip tajweed accuracy, not a women-only number | 1 |
+| datasets.md §3 | The studio_d paper is unclear which ASR built the released data | 6 |
+| Expert set's paper citations | "84.7% accuracy on female reciters" is the all-clip tajweed accuracy, not a women-only number | 1 |

@@ -16,8 +16,8 @@ extracted text, figures from captions and prose only):
    v1, including appendices C to F).
 6. Phone-level pronunciation scoring and assessment for interactive language learning
    (Speech Communication 30, 2000; "the GOP paper"); Segmentation-Free Goodness of
-   Pronunciation (arXiv 2507.16838, v3, accepted to IEEE TASLP; "the SF-GOP paper").
-7. L2-ARCTIC: A Non-Native English Speech Corpus (Interspeech 2018); speechocean762: An
+   Pronunciation (arXiv 2507.16838, v3, accepted to a journal; "the SF-GOP paper").
+7. L2-ARCTIC: A Non-Native English Speech Corpus (2018); An
    Open-Source Non-native English Speech Corpus For Pronunciation Assessment
    (arXiv 2104.01378, v2).
 
@@ -251,10 +251,10 @@ Train on a very large, diverse, weakly labelled set and evaluate zero-shot.
 
 **Robustness numbers.** At equal LibriSpeech clean WER (2.7), Whisper Large V2 makes 55.2%
 fewer errors on average across 12 other English datasets than wav2vec 2.0 Large (no LM)
-(Table 2; for example Common Voice 29.9 to 9.0, CHiME-6 65.8 to 25.5). Additive noise
+(Table 2; for example voices_a 29.9 to 9.0, CHiME-6 65.8 to 25.5). Additive noise
 (Figure 5): models trained on LibriSpeech, including wav2vec 2.0 and HuBERT variants,
-degrade fastest; NVIDIA Conformer models are best at low noise; Whisper is best below
-10 dB SNR of pub noise. Arabic: 739 h of Arabic ASR data; Common Voice 9 Arabic WER 53.8%
+degrade fastest; Conformer models are best at low noise; Whisper is best below
+10 dB SNR of pub noise. Arabic: 739 h of Arabic ASR data; voices_a (version 9) Arabic WER 53.8%
 (Large V2). Model sizes 39M to 1,550M. Dataset-scaling runs evaluated an exponential moving
 average of weights (rate 0.9999).
 
@@ -386,19 +386,19 @@ activations. Classic GOP also handles only substitutions.
   the canonical sequence versus every single-phone substitution or deletion at that
   position (|V|+1 values), and expected occupancy; fed to SVR or GOPT.
 
-**Data.** CMU Kids (9.1 h, children 6-11, 90.2% correct phones, 3.2% substitutions, 2.3%
-deletions, 4.3% insertions) with real and simulated errors; speechocean762. Acoustic
+**Data.** A children's read-speech corpus (9.1 h, children 6-11, 90.2% correct phones, 3.2% substitutions, 2.3%
+deletions, 4.3% insertions) with real and simulated errors; the L2 scoring corpus. Acoustic
 models: wav2vec2-large-xlsr-53 fine-tuned on LibriSpeech 100 h with CE, CTC, entropy-
 regularised CTC, or equal-spacing CTC.
 
-**Key numbers (CMU Kids, AUC averaged over phones).** Real errors: CE-trained DNN GOP 0.796;
+**Key numbers (children's corpus, AUC averaged over phones).** Real errors: CE-trained DNN GOP 0.796;
 CE GOP-Avg 0.851; CTC GOP-SA 0.905; CTC GOP-SF-S 0.891; CTC GOP-SF-SD 0.914; CTC GOP-SF-SDI 0.859.
 Simulated errors: 0.988-0.989 for CTC SA/SF-S. Peakiness: plain CTC has the highest blank
 coverage (88.62%) and lowest ConEn (2.83), the best phone error rate (11.46%), and the best
 GOP-SA (0.909); GOP-SF is about equally good (0.913-0.915) for all CTC variants, i.e.
 insensitive to peakiness. Standard GOP with the external aligner collapses for a model
 whose spikes drift (equal-spacing CTC: 0.580). Context: 8-14 phones of context is as good
-as the full utterance; zero context (equals GOP-SA) is worse. speechocean762 phone PCC:
+as the full utterance; zero context (equals GOP-SA) is worse. L2 scoring corpus phone PCC:
 scalar GOP-CTC-SF-SD 0.450 (classic TDNN GOP 0.361); FGOP-CTC-SF-Norm with SVR 0.581, with
 GOPT 0.648 (best prior 0.693 with a much heavier model); children 0.635, adults 0.651.
 
@@ -420,14 +420,14 @@ evaluated; scalar GOP still needs thresholds; uniform segmentation prior is an a
 
 ---
 
-## 7a. L2-ARCTIC (Interspeech 2018)
+## 7a. L2-ARCTIC (2018)
 
 **Problem.** No open non-native English corpus with phone-level error annotation for
 mispronunciation detection (and voice or accent conversion).
 
 **Annotation scheme.** 10 speakers (Hindi, Korean, Mandarin, Spanish, Arabic; one male,
-one female each), about one hour each of CMU ARCTIC prompts, 11,026 utterances, 11.2 h,
-quiet room, studio USB microphone at 20 cm, 44.1 kHz. Montreal Forced Aligner gives word
+one female each), about one hour each of ARCTIC prompts, 11,026 utterances, 11.2 h,
+quiet room, studio USB microphone at 20 cm, 44.1 kHz. An HMM-based forced aligner gives word
 and phone boundaries. About 150 utterances per speaker (100 shared + 50 chosen for that
 first language's difficulties) were hand-corrected: boundaries, actual phones (ARPAbet)
 and tags for substitution, deletion and addition, with free comments (IPA allowed).
@@ -437,7 +437,7 @@ additions. Licence CC BY-NC 4.0.
 
 **Agreement.** Not reported in the paper.
 
-**Metrics and baseline.** Classic GOP (Kaldi triphone GMM, LibriSpeech 960 h), one global
+**Metrics and baseline.** Classic GOP (triphone GMM, LibriSpeech 960 h), one global
 threshold, substitutions only. 206 utterances to choose the threshold range; 1,293 test
 utterances, 41,353 phones, 4,415 (10.7%) substitutions. Precision = correctly predicted
 errors / predicted errors; recall = correctly predicted errors / true errors. At threshold
@@ -452,14 +452,14 @@ errors / predicted errors; recall = correctly predicted errors / true errors. At
   report both enriched and natural rates **(inference)**.
 - Non-commercial licence: research reference only.
 
-## 7b. speechocean762 (arXiv 2104.01378)
+## 7b. The L2 scoring corpus (arXiv 2104.01378)
 
 **Problem.** An open corpus for pronunciation assessment, free for commercial use, with
 children and adults, scored at sentence, word and phone level.
 
 **Data.** 5,000 utterances, 250 Mandarin-speaking learners (half children; gender 1:1),
-20 sentences each, about 6 h. Recorded on **mobile phones** (Apple, Samsung, Xiaomi,
-Huawei) held 20 cm from the mouth in a quiet 3x3 m room. Train/test split by speaker,
+20 sentences each, about 6 h. Recorded on **mobile phones** (four
+brands) held 20 cm from the mouth in a quiet 3x3 m room. Train/test split by speaker,
 125 each.
 
 **Annotation scheme.** Five experts scored every utterance independently. Phone: 2 correct,
@@ -472,7 +472,7 @@ word score with all low phone scores). Most word and phone scores are 8-10 (imba
 
 **Agreement.** Not reported numerically in the paper.
 
-**Metrics and baseline.** Kaldi recipe: native TDNN acoustic model, forced alignment, GOP and
+**Metrics and baseline.** Standard HMM-toolkit recipe: native TDNN acoustic model, forced alignment, GOP and
 GOP features, one regressor per phone. MSE and Pearson correlation (PCC) with the human
 phone score: GOP value 0.69 / 0.25; GOP features with SVR 0.16 / 0.45. Imbalance handled by
 adding good samples of *other* phones as low-score samples of the current phone.
@@ -531,7 +531,7 @@ here is **(inference)** unless it restates a result above.
 - Field practice in these papers: precision and recall on the mistake class at one threshold
   with prevalence stated (L2-ARCTIC, P = R = 0.29 at 10.7% prevalence); threshold-free AUC
   averaged over phones (SF-GOP); Pearson correlation with ordinal expert scores
-  (speechocean762); agreement measures against human-to-human ceilings (GOP paper). The
+  (the L2 scoring corpus); agreement measures against human-to-human ceilings (GOP paper). The
   common precision/recall/F1 at phone level with true/false acceptance and rejection
   counts comes from later papers not read here.
 - Qaf-ft's "share caught at a fixed false-flag rate" is recall at a fixed false-positive rate
@@ -555,7 +555,7 @@ here is **(inference)** unless it restates a result above.
   reporting, per release: recall at 0.1/0.3/1% false flags, precision at the measured
   prevalence of the labelled phone set (with intervals by reciter), and the "unsure" rate.
 - Measure labeller agreement before promising a precision figure. The GOP paper's judges
-  agreed at CC 0.47 on phones; the RetaSy set reports 0.63 between raters at clip level.
+  agreed at CC 0.47 on phones; the learner_a set reports 0.63 between raters at clip level.
   Have a second labeller relabel a subset blind; precision against one labeller cannot
   meaningfully exceed the agreement between two. Word and vowel mistakes are likely more
   agreed-on than accent judgements, but this needs a number.
@@ -567,7 +567,7 @@ here is **(inference)** unless it restates a result above.
 
 - None of these papers tests phone-microphone recitation. Direct evidence on robustness:
   Whisper Figure 5 shows LibriSpeech-fine-tuned wav2vec 2.0 and HuBERT models degrading
-  faster in noise than NVIDIA Conformer models, which in turn are best at low noise; Whisper
+  faster in noise than Conformer models, which in turn are best at low noise; Whisper
   wins below 10 dB SNR because of its training data. The FastConformer paper attributes its
   own noise robustness to extra data.
 - Conclusion: switching to a wav2vec 2.0 or HuBERT style encoder is not justified by these
@@ -602,7 +602,7 @@ here is **(inference)** unless it restates a result above.
 5. **Calibrate on phone audio.** Fit token-class normalisation and verifier calibration on
    known-correct phone recitations, not studio ones; thresholds set on studio reciters
    flagged 51% of correct phone words.
-6. **Accept alternative realisations** in the expected sequence (the speechocean762 vote):
+6. **Accept alternative realisations** in the expected sequence (the L2 scoring corpus vote):
    any pronunciation an expert would accept must be in the graph, or it becomes a false flag.
 
 ### Top five, in order

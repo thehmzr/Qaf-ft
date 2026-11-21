@@ -4,7 +4,7 @@ A playbook drawn from the papers, dataset pages and code read for this project
 (details and sources in `datasets.md` and `research_summary.md`). Each section ends with
 what this project adopts.
 
-## 1. Expert recitation at scale (Quran Muaalem, 848 hours)
+## 1. Expert recitation at scale (expert, 848 hours)
 
 How it is built, almost fully automated:
 1. Collect complete recitations by expert reciters (27 mushafs, 22 reciters).
@@ -25,7 +25,7 @@ mushaf was badly cut yet still ships.
 Adopted: pause-based cutting; "transcribe, then match against the known text" to get exact
 labels cheaply; hand review only for what the matcher rejects.
 
-## 2. Three tiers of mistake data (IqraEval)
+## 2. Three tiers of mistake data (the mdd_e task)
 
 1. Correct speech (about 79 h): assumed correct, so said = expected.
 2. Synthetic mistakes (about 80 h): alter the text using a table of common sound
@@ -42,7 +42,7 @@ Weak points: mistakes are acted, read without tajweed, by native speakers.
 Adopted: the two-row label; a confusion table to generate mistakes; training order
 "synthetic first, real last"; never mix them naively.
 
-## 3. Crowd labelling of learners (RetaSy, about 7,000 clips)
+## 3. Crowd labelling of learners (learner_a, about 7,000 clips)
 
 - Collection through a phone app from volunteers in 11+ countries; 1,287 participants.
 - Each clip judged by several annotators into six classes (correct, has mistake,
@@ -58,12 +58,12 @@ Adopted: classes for "not a usable clip" (incomplete, wrong ayah, noise) so they
 confused with mistakes; control clips to measure a labeller's consistency; always report
 agreement next to results.
 
-## 4. One verse, many learners, rule-level labels (QDAT, qdat_bench)
+## 4. One verse, many learners, rule-level labels (learner_b)
 
 - About 160 learners each recite the same ayah several times.
 - An annotator marks specific tajweed sites: each madd with its length, ghunnah, qalqalah,
   and writes out what was actually said in the sound script.
-- qdat_bench: 159 clips, 120 of them women, one annotator.
+- learner_b's benchmark subset: 159 clips, 120 of them women, one annotator.
 
 Weak points: one ayah only; one annotator; models tested on it look far better than they
 generalise (95-99% reported by simple classifiers).
@@ -71,10 +71,10 @@ generalise (95-99% reported by simple classifiers).
 Adopted: fixed "probe ayahs" that every reciter records, so reciters can be compared on
 identical text; marking tajweed at named sites with a measured length, not a vague flag.
 
-- Caution: the 95-99% results reported on QDAT come from a random clip split with about ten
+- Caution: the 95-99% results reported on learner_b's parent set come from a random clip split with about ten
   takes per speaker, so the same voices are in train and test (speaker leakage).
 
-## 5. Real phone audio with unverified labels (app recordings, about 393,000 clips)
+## 5. Real phone audio with unverified labels (phone, about 393,000 clips)
 
 - Ordinary users reciting into phones; the label is whatever ayah the app expected.
 - Nobody checked that the user recited that ayah, finished it, or recited it correctly.
@@ -84,7 +84,7 @@ identical text; marking tajweed at named sites with a measured length, not a vag
 Adopted: the same agreement filter before any phone clip is trained on; clips the filter
 rejects are kept aside as candidates for hand labelling, since that is where mistakes are.
 
-## 6. Benchmarks that test false flags (Quran-Lab)
+## 6. Benchmarks that test false flags (bench_a, bench_b)
 
 - A set of correct recitations by reciters held out from training, each with every legal
   way of reading the ayah, so a legitimate variant is never counted as an error.

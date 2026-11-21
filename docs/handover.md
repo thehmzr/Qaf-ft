@@ -8,8 +8,8 @@ and `research_summary.md` for numbers and sources.
 | Piece | Where | State |
 |---|---|---|
 | Sound tokens (81) | `qafft/phonetic.py`, `qafft/vocab.json` | Done |
-| Training scripts | `train/pilot.py`, `train/full.py`, `train/kaggle_*.ipynb` | Done, run on Kaggle |
-| Trained model | Kaggle kernel `qaf-full-run`, output `full/best.pt` (418 MB) | 0.43% token error on held-out reciters |
+| Training scripts | `train/pilot.py`, `train/full.py`, `train/kaggle_*.ipynb` | Done, run on the GPU notebook service |
+| Trained model | GPU notebook kernel `qaf-full-run`, output `full/best.pt` (418 MB) | 0.43% token error on held-out reciters |
 | Checker | `qafft/verify.py` | Alignment score + extra-sound check; words-and-vowels mode measured (`results.md`) |
 | Mistake generator | `qafft/mistakes.py` | Done |
 | Metrics | `qafft/mdd.py`, `eval/evaluate.py` | Done |
@@ -37,22 +37,22 @@ Files that are not in git and must be fetched again:
 
 | File | How |
 |---|---|
-| Base checkpoint | `huggingface-cli download nvidia/stt_ar_fastconformer_hybrid_large_pcd_v1.0` or let the code download it |
-| `models/full/best.pt` | Kaggle: kernel `qaf-full-run`, Output tab, or `kaggle kernels output thehmzr/qaf-full-run -p models --file-pattern 'best\.pt$'` (the output keeps its `full/` folder) |
+| Base checkpoint | let the code download it (the id is set in the training script) |
+| `models/full/best.pt` | GPU notebook service: kernel `qaf-full-run`, Output tab, or `kaggle kernels output thehmzr/qaf-full-run -p models --file-pattern 'best\.pt$'` (the output keeps its `full/` folder) |
 | Display text | first start of the labelling tool, or `python -m qafft.quran_text` |
 | `data/ayah_tokens.json` | `{f"{s}:{a}": ayah_tokens(s, a) for s, a in all_ayahs()}` from `qafft.phonetic` (about a minute) |
-| `data/tlog_holdout_ids.json` | file names in `audio/tlog_holdout/metadata.jsonl` of the benchmark set; kept out of phone training |
-| Held-out reciters' data | `obadx/muaalem-annotated-v3`, moshaf 5.0 and 13.0 (test), 19.0 (validation) |
-| Phone recordings | `deepdml/tlog-clean-sf16k`, 79 files of 5,000 clips |
+| `data/phone_holdout_ids.json` | file names of the phone holdout clips in bench_a (`data/realworld/bench_a`); kept out of phone training |
+| Held-out reciters' data | the expert set, moshaf 5.0 and 13.0 (test), 19.0 (validation) |
+| Phone recordings | the phone set's 16 kHz mirror (`data/phone_src`), 79 files of 5,000 clips |
 
-Accounts needed: a Kaggle API token (`~/.kaggle/access_token`, or the older `~/.kaggle/kaggle.json`)
-to push and read runs, and a Hugging Face token for gated sets.
+Accounts needed: a GPU notebook service API token (`~/.kaggle/access_token`, or the older `~/.kaggle/kaggle.json`)
+to push and read runs, and a token for the platform for gated sets.
 
 ## 3. Rules that hold
 
 - Words and vowels are the target. Tajweed judging is a later, optional mode.
-- Only permissively licensed sources go into the model (`data_licenses.md`). Excluded: sets under
-  the Quran-Lab, QUA and non-commercial licences, and audio with no documented licence.
+- Only permissively licensed sources go into the model; usage terms are kept with the source files.
+  Excluded: bench_a, bench_b, studio_e, the non-commercial sets, and audio with no documented terms.
 - Three reciters are never trained on: moshaf 5.0 and 13.0 (test), 19.0 (validation).
 - Every result is split and resampled by reciter, and reported at fixed false-flag rates
   (`assessment_protocol.md`).
@@ -105,26 +105,24 @@ to push and read runs, and a Hugging Face token for gated sets.
 | `docs/status.md` | Where things stand, in one page |
 | `docs/research_summary.md` | Every finding and measured number, with sources: existing models, methods, base architectures, datasets, each run and test |
 | `docs/results.md` | One row per experiment: checkpoint, data, test set, false flags, catch rates |
-| `docs/datasets.md` | Each dataset in detail: how it was built, format, quirks, exact licence clauses |
-| `docs/data_licenses.md` | Which sources are used for training, for evaluation only, on hold, or excluded, and why |
+| `docs/datasets.md` | Each dataset in detail: how it was built, format, quirks, and whether it is used for training, evaluation only, on hold, or excluded |
 | `docs/how_others_build.md` | How other teams collect, label and check recitation data, and what was adopted |
 | `docs/assessment_protocol.md` | How results are judged: thresholds, false-flag arithmetic, resampling by reciter |
 | `docs/notes/` | Chapter notes on the statistical learning textbook behind the protocol |
-| `CREDITS.md` | Credits owed to each source |
 
 ## 8. Datasets at a glance
 
 | Dataset | Role | Access |
 |---|---|---|
-| obadx/muaalem-annotated-v3 (848 h, expert reciters, sound labels) | Main training set | Open |
-| deepdml/tlog-clean-sf16k (about 393,000 phone clips, unverified labels) | Phone training after filtering; source of labelling batches | Open |
-| Surah Al-Ikhlas error set (1,506 clips, labelled by five experts) | Mistake examples | Open |
-| RetaSy learner clips (911 judged correct or incorrect) | Evaluation only: no licence stated | Open |
-| obadx/qdat_bench (159 learners, one ayah, tajweed-level labels) | Evaluation, for the later tajweed mode | Open |
-| Luxbg/quran-muaalem-aligned, unseen-reciters split | Held-out reciters with word timings | Open |
-| IqraEval sets, Tadabur | Not used: non-commercial | Access granted |
-| Quran-Lab benchmarks, QUA aligned recitations | Not used: their licences would set the model's own licence | Access granted |
-| Several Kaggle sets (tajweed by rule, children's mispronunciation, isolated letters, word-by-word Al-Fatihah) | Not yet examined beyond their descriptions | Kaggle account |
+| expert (848 h of expert recitation, sound-level labels) | Main training set | Open |
+| phone, 16 kHz mirror (about 393,000 phone clips, unverified labels) | Phone training after filtering; source of labelling batches | Open |
+| mdd_c (one-sura word-level error set, 1,506 clips, labelled by five experts) | Mistake examples | Open |
+| learner_a (911 learner clips judged correct or incorrect) | Evaluation only | Open |
+| learner_b (159 learners, one ayah, tajweed-rule labels) | Evaluation, for the later tajweed mode | Open |
+| aligned expert set, unseen-reciters split | Held-out reciters with word timings (`data/timings_a`) | Open |
+| mdd_b, mdd_e and their task's other sets, studio_d | Not used for training: non-commercial | Access granted |
+| bench_a, bench_b, studio_e | Not used: their terms would set the model's own terms | Access granted |
+| Several sets on the GPU notebook service (tajweed by rule, children's mispronunciation, isolated letters, word-by-word Al-Fatihah) | Not yet examined beyond their descriptions | Service account |
 
 The user's own labels and any recitation recorded for the project are the only data with no
 licence question, and the only source of word-located real mistakes.
@@ -137,7 +135,7 @@ licence question, and the only source of word-located real mistakes.
 | System page | `page/system.html` (same server) | Technical reference with diagrams: workflow, model, checker, stages, results |
 | Background runner | `tools/jobs.py`, `tools/progress.py` | Queue, pause, resume, stop and restart long local runs, with progress and time estimates in `jobs/` |
 | Benchmarks of existing models | `bench/` | Scripts and scoring used for the baseline comparisons |
-| Kaggle runs | kernels `notebook9fe060249a` (pilot) and `qaf-full-run` | Notebooks are generated from `train/make_kaggle_notebook.py`; push and read with the Kaggle API |
+| GPU notebook runs | kernels `notebook9fe060249a` (pilot) and `qaf-full-run` | Notebooks are generated from `train/make_kaggle_notebook.py`; push and read with the service's API |
 
 ## 10. Methods in one paragraph each
 

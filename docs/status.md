@@ -1,7 +1,7 @@
 # Status
 
 ## Approach
-Fine-tune of nvidia/stt_ar_fastconformer_hybrid_large_pcd_v1.0 (115M, CC BY 4.0): encoder kept, new
+Fine-tune of base, the pretrained 115M FastConformer Arabic model: encoder kept, new
 head (2x upsample + linear), CTC loss, 81 sound tokens from the Quran phonetic script with repeats
 folded into count tokens. No language model. Mistakes are found by a separate checker
 (`qafft/verify.py`): alignment score per expected token plus an extra-sound check, per word.

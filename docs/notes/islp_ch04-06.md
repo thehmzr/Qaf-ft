@@ -1,6 +1,6 @@
 # ISLP study notes: Chapters 4, 5, 6 (for Qaf-ft)
 
-Source: `refs/islp_text/islp.txt`, lines 8735-18740 (pdftotext extraction of *An Introduction to Statistical Learning with Applications in Python*, Springer 2023). Page numbers are the book's own (running headers). Chapter 4 = pp. 135-199, Chapter 5 = pp. 201-228, Chapter 6 = pp. 229-288.
+Source: `refs/islp_text/islp.txt`, lines 8735-18740 (pdftotext extraction of *An Introduction to Statistical Learning with Applications in Python*, 2023). Page numbers are the book's own (running headers). Chapter 4 = pp. 135-199, Chapter 5 = pp. 201-228, Chapter 6 = pp. 229-288.
 
 Conventions used in these notes
 
