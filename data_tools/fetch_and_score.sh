@@ -10,7 +10,7 @@ export HF_HUB_DISABLE_XET=1 PYTORCH_ENABLE_MPS_FALLBACK=1
 name() { printf "data/clean-%05d.parquet" "$1"; }
 done_already() {
   local s="data/phone_scores/clean-$(printf %05d "$1").jsonl"
-  [ -s "$s" ] && [ "$(wc -l < "$s")" -ge 4990 ]
+  [ -f "$s.done" ] || { [ -s "$s" ] && [ "$(wc -l < "$s")" -ge 4990 ]; }
 }
 fetch() {
   $PY -c "from huggingface_hub import hf_hub_download; hf_hub_download('deepdml/tlog-clean-sf16k','$(name "$1")',repo_type='dataset',local_dir='data/tlog')" >/dev/null 2>&1

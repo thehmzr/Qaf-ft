@@ -77,33 +77,50 @@ class ShardFiles:
 
     def __init__(self, names, tmp, seed, repo=REPO, keep=()):
         self.q, self.lock, self.users = queue.Queue(maxsize=1), threading.Lock(), collections.Counter()
-        self.keep, rng = set(keep), random.Random(seed)
+        self.keep, self.tmp, rng = set(keep), tmp, random.Random(seed)
 
         def producer():
+            fails = 0
             while True:
                 order = names[:]
                 rng.shuffle(order)
                 for name in order:
+                    key = self.key(name)
+                    with self.lock:                 # counted before the download, so it is not deleted under us
+                        self.users[key] += 1
                     try:
-                        with self.lock:
-                            path = fetch(name, tmp, repo)
-                            self.users[path] += 1
+                        path = fetch(name, tmp, repo)
                     except Exception as e:
+                        with self.lock:
+                            self.users[key] -= 1
+                        fails += 1
                         print("skip shard", name, type(e).__name__, flush=True)
+                        if fails >= len(names):
+                            self.q.put(RuntimeError(f"{fails} downloads in a row failed, last: {name}: {e}"))
+                            return
+                        time.sleep(min(60, 2 ** fails))
                         continue
+                    fails = 0
                     self.q.put((name, path))
 
         threading.Thread(target=producer, daemon=True).start()
 
-    def get(self):
-        return self.q.get()
+    def key(self, name):
+        return os.path.abspath(os.path.join(self.tmp, name))
 
-    def done(self, name, path):
+    def get(self):
+        item = self.q.get()
+        if isinstance(item, Exception):
+            raise item
+        return item
+
+    def done(self, name, path=None):
+        key = self.key(name)
         with self.lock:
-            self.users[path] -= 1
-            if self.users[path] <= 0 and name not in self.keep:
+            self.users[key] -= 1
+            if self.users[key] <= 0 and name not in self.keep:
                 try:
-                    os.remove(path)
+                    os.remove(key)
                 except OSError:
                     pass
 
@@ -180,7 +197,7 @@ def degrade(wav, p):
                 x = torch.nn.functional.pad(x, (0, n - x.numel()))
         if random.random() < 0.3:
             peak = x.abs().max().clamp_min(1e-4)
-            g = random.uniform(2, 5) / peak
+            g = random.uniform(1.1, 1.6) / peak         # clips only the loudest peaks
             x = (x * g).clamp(-1, 1) / g
         if random.random() < 0.5:
             rt60 = random.uniform(0.2, 0.6)
@@ -241,18 +258,25 @@ def main():
 
     train, val_f, test_f = shard_lists()
     print(f"shards: train {len(train)} val {len(val_f)} test {len(test_f)}", flush=True)
-    expert = expert_batches(ShardFiles(train, a.tmp, seed=a.seed), vocab, a.batch, seed=a.seed)
 
-    phone = phone_val = None
+    def make_streams(seed):
+        """Training batches; the seed decides shard and clip order, so a resumed run does not repeat itself."""
+        expert = expert_batches(ShardFiles(train, a.tmp, seed=seed), vocab, a.batch, seed=seed)
+        phone = None
+        if a.phone:
+            names = sorted(sel["train"])
+            files = ShardFiles(names, os.path.join(a.tmp, "phone"), seed=seed + 1, repo=PHONE_REPO)
+            phone = phone_batches(files, lambda n, p: PhoneClips(p, wanted(n), by_ayah, vocab),
+                                  len(names), a.batch, seed=seed + 1)
+        return expert, phone
+
+    phone_val = None
     if a.phone:
         sel = json.load(open(a.phone))
         by_ayah = json.load(open(a.phone_tokens))
         assert sel["train"], "the phone selection has no training clips"
         wanted = lambda n: {c[0]: c[1] for c in sel["train"][n]}
         names = sorted(sel["train"])
-        files = ShardFiles(names, os.path.join(a.tmp, "phone"), seed=a.seed + 1, repo=PHONE_REPO)
-        phone = phone_batches(files, lambda n, p: PhoneClips(p, wanted(n), by_ayah, vocab),
-                              len(names), a.batch, seed=a.seed + 1)
         pv = []
         for n, clips in sorted(sel.get("val", {}).items()):
             if clips:
@@ -264,6 +288,7 @@ def main():
               f"{len(phone_val) if phone_val else 0} val clips", flush=True)
 
     if a.dry:
+        expert, phone = make_streams(a.seed)
         t0 = time.time()
         for n in range(6):
             src = phone if phone is not None and n % 2 else expert
@@ -297,11 +322,6 @@ def main():
         return warm * (a.lr_floor + (1 - a.lr_floor) * decay)
 
     sched = torch.optim.lr_scheduler.LambdaLR(opt, shape)
-    ema = None
-    if a.ema:
-        ema = copy.deepcopy(model)
-        for p in ema.parameters():
-            p.requires_grad_(False)
     ctc = nn.CTCLoss(blank=blank, zero_infinity=True)
 
     def check(tag, m):
@@ -313,14 +333,22 @@ def main():
     step, run, bad = 0, 0.0, 0
     best = None                         # (score, studio) of the best saved model
     last = os.path.join(a.out, "last.pt")
+    resumed = None
     if os.path.exists(last):
         ck = torch.load(last, map_location=dev)
         if "opt" in ck:
             model.load_state_dict(ck["model"]); opt.load_state_dict(ck["opt"]); sched.load_state_dict(ck["sched"])
-            if ema is not None and ck.get("ema"):
-                ema.load_state_dict(ck["ema"])
             step, best, start = ck["step"], ck.get("best"), ck.get("start")
+            resumed = ck
             print("resumed at step", step, flush=True)
+    ema = None
+    if a.ema:                           # made after any resume, so it starts from the weights in use
+        ema = copy.deepcopy(model)
+        for p in ema.parameters():
+            p.requires_grad_(False)
+        if resumed is not None and resumed.get("ema"):
+            ema.load_state_dict(resumed["ema"])
+    del resumed
     if step == 0:
         start = check("start", model) if a.init else (None, None)
         if a.init:
@@ -335,7 +363,8 @@ def main():
                         tokens=tokens), last + ".tmp")
         os.replace(last + ".tmp", last)
 
-    t0 = time.time()
+    expert, phone = make_streams(a.seed + step)
+    t0, step0 = time.time(), step
     model.train()
     while step < a.steps and time.time() - t_start < a.hours * 3600:
         for _ in range(a.accum):
@@ -356,7 +385,7 @@ def main():
         if ema is not None:
             ema_update(ema, model, min(a.ema, (1 + step) / (10 + step)))
         if step % 100 == 0:
-            print(f"step {step} loss {run / 100:.3f} {(time.time() - t0) / step:.2f}s/step", flush=True)
+            print(f"step {step} loss {run / 100:.3f} {(time.time() - t0) / max(1, step - step0):.2f}s/step", flush=True)
             run = 0.0
         if step % a.eval_every == 0:
             for tag, m in (("model", model), ("ema", ema)):
@@ -370,6 +399,7 @@ def main():
                     torch.save(dict(model=m.state_dict(), tokens=tokens, step=step, per=per, phone_per=pper, kind=tag),
                                os.path.join(a.out, "best.pt"))
                     print(f"  saved best.pt ({tag})", flush=True)
+                    save_last()             # so a resume never forgets this best
             model.train()
         if step % a.save_every == 0:
             save_last()
@@ -379,8 +409,10 @@ def main():
 
     tl = torch.utils.data.DataLoader(te, **kw)
     result = dict(step=step, start_val=start[0], start_phone_val=start[1], best=best)
-    for tag, path in (("best", "best.pt"), ("ema", "ema.pt")):
-        p = os.path.join(a.out, path)
+    for tag, path in (("start", a.init), ("best", "best.pt"), ("ema", "ema.pt")):
+        if not path:
+            continue
+        p = path if tag == "start" else os.path.join(a.out, path)
         if os.path.exists(p):
             model.load_state_dict(torch.load(p, map_location=dev)["model"])
             per = evaluate(model, tl, blank, dev)

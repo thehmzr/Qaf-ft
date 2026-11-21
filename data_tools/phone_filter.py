@@ -50,7 +50,15 @@ def main():
     n = 0
     for f in a.shards:
         out = os.path.join(out_dir, os.path.basename(f).replace(".parquet", ".jsonl"))
-        done = {json.loads(l)["path"] for l in open(out)} if os.path.exists(out) else set()
+        done = set()
+        if os.path.exists(out):             # keep whole lines only (a killed run can leave half a line)
+            good = []
+            for l in open(out):
+                try:
+                    done.add(json.loads(l)["path"]); good.append(l if l.endswith("\n") else l + "\n")
+                except (ValueError, KeyError):
+                    pass
+            open(out, "w").writelines(good)
         pf = pq.ParquetFile(f)
         with open(out, "a") as fo:
             for rg in range(pf.num_row_groups):
@@ -83,6 +91,8 @@ def main():
                     fo.write(json.dumps(rec) + "\n")
                     if n % 20 == 0:
                         fo.flush(); report(n, total, note="scoring phone clips", unit="clips")
+        with open(out + ".done", "w") as fd:   # marks the file as complete, whatever its length
+            fd.write(str(pf.metadata.num_rows))
     report(n, n, note="finished", unit="clips", force=True)
 
 

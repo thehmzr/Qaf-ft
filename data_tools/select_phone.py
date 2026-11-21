@@ -5,7 +5,12 @@
 Keeps clips whose free decoding is close to the claimed ayah on words and vowels.
 Leaves out the benchmark holdout clips and every clip in the labelling queue.
 Whole files are set apart before anything else: a few as phone-heldout (test, never trained
-on, never used to choose anything) and a few for phone validation.
+on, never used to choose anything) and a few for phone validation. Only fully scored files
+are used.
+
+Validation clips pass the same filter as training clips, so they are clips the scoring model
+already decodes well. Phone validation checks that training did not break anything; whether
+phone audio got better is judged on human-labelled clips.
 
 Writes, under data/:
   phone_split.json     which files are heldout and which are validation (fixed by --seed)
@@ -34,13 +39,17 @@ a = ap.parse_args()
 P = lambda p: p if os.path.isabs(p) else os.path.join(ROOT, p)
 rng = random.Random(a.seed)
 
-# split by whole file first; file 0 holds the labelling queue, so it stays a training file
+# split by whole file first, with its own generator so reruns pick the same clips;
+# file 0 holds the labelling queue, so it stays a training file
 split_path = P(os.path.join(a.out_dir, "phone_split.json"))
+pick = random.Random(a.seed).sample(range(1, N_FILES), a.n_heldout + a.n_val)
+split = dict(heldout=sorted(pick[: a.n_heldout]), val=sorted(pick[a.n_heldout:]), seed=a.seed)
 if os.path.exists(split_path):
-    split = json.load(open(split_path))
+    old = json.load(open(split_path))
+    if old != split:
+        raise SystemExit(f"{split_path} was made with other settings ({old}); the phone test files must not "
+                         "change once chosen. Use the same --seed/--n-heldout/--n-val, or delete the file on purpose.")
 else:
-    pick = rng.sample(range(1, N_FILES), a.n_heldout + a.n_val)
-    split = dict(heldout=sorted(pick[: a.n_heldout]), val=sorted(pick[a.n_heldout:]), seed=a.seed)
     json.dump(split, open(split_path, "w"), indent=1)
 heldout, val_files = set(split["heldout"]), set(split["val"])
 
@@ -55,15 +64,29 @@ drop |= {os.path.splitext(os.path.basename(p))[0] for p in glob.glob(P("data/que
 why = collections.Counter()
 train, val, manifest = collections.defaultdict(list), {}, []
 seen_files = []
+def complete(f):
+    return os.path.exists(f + ".done") or sum(1 for _ in open(f)) >= 4990
+
+
+def rows(f):
+    for line in open(f):
+        try:
+            yield json.loads(line)
+        except ValueError:
+            pass                            # half-written line from a stopped run
+
+
+partial = []
 for f in sorted(glob.glob(os.path.join(P(a.scores), "clean-*.jsonl"))):
     idx = int(os.path.basename(f)[6:11])
+    if not complete(f):
+        partial.append(idx); continue
     seen_files.append(idx)
     shard = f"data/clean-{idx:05d}.parquet"
     if idx in heldout:
-        why["heldout file"] += sum(1 for _ in open(f)); continue
+        why["heldout file"] += sum(1 for _ in rows(f)); continue
     keep = []
-    for line in open(f):
-        r = json.loads(line)
+    for r in rows(f):
         why["seen"] += 1
         if r.get("skip"):
             why["skipped when scoring"] += 1; continue
@@ -98,7 +121,7 @@ n_tr = sum(map(len, train_sel.values())); n_va = sum(map(len, val.values()))
 hours = sum(m["dur"] for m in manifest) / 3600
 missing = sorted(set(range(N_FILES)) - set(seen_files))
 print("clips:", dict(why))
-print(f"files scored: {len(seen_files)} of {N_FILES}" + (f" (missing {missing[:10]}{'...' if len(missing) > 10 else ''})" if missing else ""))
+print(f"files fully scored: {len(seen_files)} of {N_FILES}" + (f"; still being scored: {partial}" if partial else ""))
 print(f"heldout files {sorted(heldout)}, val files {sorted(val_files)}")
 print(f"selected: train {n_tr} clips ({hours:.1f} h) from {len(train_sel)} files covering {len(train)} ayahs; val {n_va}")
 if not val:
