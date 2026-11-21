@@ -15,7 +15,8 @@ import torch
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT); sys.path.insert(0, os.path.join(ROOT, "train"))
-from qafft.phonetic import ayah_uthmani, default_moshaf, fold_with_groups
+from qafft.phonetic import fold_with_groups
+from qafft.wordmap import word_tokens
 from qafft.verify import extra_sounds, group_scores, token_scores
 
 ap = argparse.ArgumentParser()
@@ -24,7 +25,6 @@ ap.add_argument("--queue", required=True); ap.add_argument("--clean", required=T
 ap.add_argument("--blind", type=float, default=0.2)
 a = ap.parse_args()
 from pilot import QafModel
-from quran_transcript import quran_phonetizer
 torch.set_num_threads(4)
 ck = torch.load(a.ckpt, map_location="cpu")
 tokens = ck["tokens"]; vocab = {t: i for i, t in enumerate(tokens)}; blank = len(tokens)
@@ -68,10 +68,10 @@ items = json.load(open(mf))["items"]
 rng = random.Random(11)
 n_flag = n_words = 0
 for it in items:
-    ph = quran_phonetizer(ayah_uthmani(it["sura"], it["aya"]), default_moshaf(), remove_spaces=False).phonemes
-    toks, grps = fold_with_groups(ph)
+    # proposals are shown on display words, so score per display word
+    toks, tw, _ = word_tokens(it["sura"], it["aya"])
     wav, sr = sf.read(os.path.join(a.queue, it["file"]), dtype="float32")
-    b = word_badness(wav, toks, grps) or {}
+    b = word_badness(wav, toks, tw) or {}
     it["blind"] = rng.random() < a.blind
     it["proposals"] = [dict(word=g, strength="strong" if v > strong else "possible") for g, v in sorted(b.items()) if v > thr]
     n_flag += len(it["proposals"]); n_words += len(b)

@@ -149,12 +149,11 @@ def main():
             d = json.load(open(f))
             if d.get("clip_kind", "usable") != "usable" or d.get("repeat_of"):
                 continue
-            from quran_transcript import quran_phonetizer
-            from qafft.phonetic import ayah_uthmani, default_moshaf
-            ph = quran_phonetizer(ayah_uthmani(d["sura"], d["aya"]), default_moshaf(), remove_spaces=False).phonemes
-            toks, grps = fold_with_groups(ph)
+            from qafft.wordmap import word_tokens
+            # marks are display-word indices: score per display word, not per spoken group
+            toks, tw, _ = word_tokens(d["sura"], d["aya"], d.get("words"))
             wav, sr = sf.read(f[:-5] + ".wav", dtype="float32")
-            sc = score(logp(wav), toks, grps)
+            sc = score(logp(wav), toks, tw)
             if sc is None:
                 continue
             wrong = {m["word"] for m in d["marks"]}

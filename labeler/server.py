@@ -13,7 +13,8 @@ from urllib.parse import parse_qs, urlparse
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 from qafft.mistakes import options
-from qafft.phonetic import ayah_sites, ayah_tokens, ayah_uthmani, default_moshaf, fold_with_groups
+from qafft.phonetic import ayah_sites, ayah_uthmani
+from qafft.wordmap import group_words, word_tokens
 from qafft import quran_text
 from qafft.tajweed_text import COLOURS, NAMES, ORDER, coloured_words
 
@@ -38,15 +39,13 @@ KIND_TO_MISTAKE = {"letter": "letter", "vowel": "vowel mark", "madd": "madd leng
                    "ghunnah": "ghunnah", "qalqalah": "qalqalah"}
 
 
-def word_sounds(s, a, n_words):
-    """The expected sound tokens of each word, each with the ways it is commonly said wrong."""
-    from quran_transcript import quran_phonetizer
-    ph = quran_phonetizer(ayah_uthmani(s, a), default_moshaf(), remove_spaces=False).phonemes
-    toks, grps = fold_with_groups(ph)
+def word_sounds(s, a, words):
+    """The expected sound tokens of each display word, each with the ways it is commonly said wrong."""
+    toks, tw, n_words = word_tokens(s, a, words)
     out = [[] for _ in range(n_words)]
-    for pos, (t, g) in enumerate(zip(toks, grps)):
+    for pos, (t, w) in enumerate(zip(toks, tw)):
         alts = [dict(now=new, kind=KIND_TO_MISTAKE[k]) for k, new in options(t)]
-        out[min(g, n_words - 1)].append(dict(pos=pos, t=t, alts=alts))
+        out[w].append(dict(pos=pos, t=t, alts=alts))
     return out, toks
 
 
@@ -101,8 +100,11 @@ class Handler(BaseHTTPRequestHandler):
         if u.path == "/ayah":
             s, a = int(q["s"][0]), int(q["a"][0])
             words = quran_text.words(s, a) or ayah_uthmani(s, a).split()
-            sounds, toks = word_sounds(s, a, len(words))
-            return self.send(200, dict(sura=s, aya=a, words=words, tokens=toks, sites=ayah_sites(s, a),
+            sounds, toks = word_sounds(s, a, words)
+            sites, gw = ayah_sites(s, a), group_words(s, a, words)
+            for x in sites:
+                x["words"] = gw[x["group"]]          # display words of the site's spoken group
+            return self.send(200, dict(sura=s, aya=a, words=words, tokens=toks, sites=sites,
                                        coloured=coloured_words(words), sounds=sounds))
         if u.path == "/list":
             items = []
@@ -166,7 +168,7 @@ class Handler(BaseHTTPRequestHandler):
         if label.get("clip_kind", "usable") not in CLIP_KINDS:
             return self.send(400, dict(error="unknown clip kind"))
         rid = time.strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:6]
-        _, expected = word_sounds(int(label["sura"]), int(label["aya"]), max(1, len(label.get("words", []))))
+        _, expected = word_sounds(int(label["sura"]), int(label["aya"]), label.get("words") or None)
         edits = {int(e["pos"]): e.get("now") for m in label.get("marks", []) for e in m.get("sounds", [])}
         said = [edits.get(i, t) for i, t in enumerate(expected)]
         label.update(id=rid, saved=time.strftime("%Y-%m-%dT%H:%M:%S"), expected_tokens=expected,
