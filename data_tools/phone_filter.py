@@ -26,12 +26,13 @@ def main():
     ap.add_argument("--base", default=None)
     ap.add_argument("--shards", nargs="+", required=True)
     ap.add_argument("--max-sec", type=float, default=30.0)
+    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu")
     a = ap.parse_args()
     from pilot import QafModel
     torch.set_num_threads(4)
     ck = torch.load(a.ckpt, map_location="cpu")
     tokens = ck["tokens"]; vocab = {t: i for i, t in enumerate(tokens)}; blank = len(tokens)
-    model = QafModel(len(tokens), a.base); model.load_state_dict(ck["model"]); model.eval()
+    model = QafModel(len(tokens), a.base); model.load_state_dict(ck["model"]); model.eval(); model.to(a.device)
     cls, _ = basic_classes(tokens)
 
     def basic(seq):
@@ -68,9 +69,9 @@ def main():
                             wav, sr = sf.read(io.BytesIO(r["audio"]["bytes"]), dtype="float32")
                             if wav.ndim > 1: wav = wav.mean(1)
                             with torch.no_grad():
-                                w = torch.from_numpy(wav).unsqueeze(0)
-                                lp, hl = model(w, torch.tensor([w.shape[1]]))
-                            best = lp[0, : hl[0]].max(-1)
+                                w = torch.from_numpy(wav).unsqueeze(0).to(a.device)
+                                lp, hl = model(w, torch.tensor([w.shape[1]], device=a.device))
+                            best = lp[0, : hl[0]].cpu().max(-1)
                             hyp = [i for i in torch.unique_consecutive(best.indices).tolist() if i != blank]
                             ids = [vocab[t] for t in ref]
                             rec.update(err=round(Levenshtein.distance(hyp, ids) / max(1, len(ids)), 4),
