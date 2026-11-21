@@ -156,3 +156,29 @@ Reading: dropping tajweed detail does not lower the flags. At 1% it flags more, 
 threshold falls further on studio audio than the scores do on phone audio. Strong flags stay the
 same (21% vs 22%): the words that fail clearly fail on letters and vowels, not on lengths. The gap
 is acoustic, which points to the phone fine-tune. One labeller, small sample.
+
+## Real recitation mistakes (three local sets, `eval/real_mistakes.py`)
+
+First check on mistakes people actually made, not planted ones. Thresholds come from correct
+words of the studio validation reciter (`studio-val`, 300 segments, 2,029 words), not from the
+test sets. Labels per printed word: correct, word/vowel mistake, or tajweed-only mistake.
+
+- `mdd_c` (sura 112, 397 clips with audio): each clip names the wrong words and an error type;
+  "vowels" (and "vowels and tajweed") count as word/vowel, the rest (mostly qalqalah on the
+  final dal, some articulation notes) as tajweed-only. AUC 0.77 tajweed judged, 0.79 words and
+  vowels. At the 1% studio threshold: catch 44-45%, but 6-8% of correct words are flagged, so
+  precision is about 50%. At 0.1%: catch 5%, precision under 40%.
+- `mdd_d` (441 Hafs chunks, other readings dropped): word -> type dict; wording, letters and
+  vowel marks count as word/vowel. AUC about 0.5 and 22% of correct words flagged even at the
+  0.1% threshold: the checker does not work on these chunks as they stand (phone audio, chunk
+  text may not match the audio, very few labels).
+- `learner_b` (158 clips of the end of 5:109): word/vowel mistakes found by comparing the said
+  phonetic transcript with the canonical one in the words-and-vowels classes (ghunnah and
+  hidden-noon differences counted as tajweed). 41 clips fully correct, 26 word/vowel mistakes,
+  297 tajweed-only. False flags stay near the studio rate (0.4-0.5%), catch is low (8-15% at 1%).
+
+What this says: studio thresholds do not carry over to phone audio (false flags 6-23% instead
+of 1%), and on real mistakes no threshold reaches 90% precision on any set, even when chosen on
+the test set. The 0.1% threshold rests on two words of 2,029, so it is rough. Most useful next
+steps: thresholds (or a calibration) from correct phone recordings, training on phone-quality
+audio, and more labelled real word/vowel mistakes.
