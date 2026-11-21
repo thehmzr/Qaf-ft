@@ -17,6 +17,7 @@ from rapidfuzz.distance import Levenshtein
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT); sys.path.insert(0, os.path.join(ROOT, "train")); sys.path.insert(0, os.path.join(ROOT, "tools"))
 from progress import report
+from qafft.verify import basic_classes
 
 
 def main():
@@ -31,6 +32,17 @@ def main():
     ck = torch.load(a.ckpt, map_location="cpu")
     tokens = ck["tokens"]; vocab = {t: i for i, t in enumerate(tokens)}; blank = len(tokens)
     model = QafModel(len(tokens), a.base); model.load_state_dict(ck["model"]); model.eval()
+    cls, _ = basic_classes(tokens)
+
+    def basic(seq):
+        """the same sequence judged on words and vowels only"""
+        out = []
+        for i in seq:
+            c = cls[i]
+            if c is not None and (not out or out[-1] != c):
+                out.append(c)
+        return out
+
     expected = json.load(open(os.path.join(ROOT, "data", "ayah_tokens.json")))
     out_dir = os.path.join(ROOT, "data", "phone_scores"); os.makedirs(out_dir, exist_ok=True)
     total = sum(pq.ParquetFile(f).metadata.num_rows for f in a.shards)
@@ -63,7 +75,8 @@ def main():
                             ids = [vocab[t] for t in ref]
                             rec.update(err=round(Levenshtein.distance(hyp, ids) / max(1, len(ids)), 4),
                                        ratio=round(len(hyp) / max(1, len(ids)), 3),
-                                       conf=round(float(best.values.mean()), 4), n=len(ids))
+                                       conf=round(float(best.values.mean()), 4), n=len(ids),
+                                       err_basic=round(Levenshtein.distance(basic(hyp), basic(ids)) / max(1, len(basic(ids))), 4))
                         except Exception as e:
                             rec["skip"] = True; rec["why"] = type(e).__name__
                     fo.write(json.dumps(rec) + "\n")

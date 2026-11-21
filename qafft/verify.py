@@ -59,3 +59,44 @@ def extra_sounds(logp, ids, groups, blank):
             g = groups[max(0, min(len(groups) - 1, i1 - 1 if tag == "insert" else i2 - 1))]
             out[g] = max(out.get(g, 0.0), -math.log(1 - p))
     return out
+
+
+def basic_classes(tokens):
+    """Maps every token to a "words and vowels" class, ignoring tajweed detail.
+
+    Kept: which letter, which short vowel, whether a long vowel is present, and doubling.
+    Ignored: how many counts a madd or ghunnah is held, hidden versus plain noon and
+    meem, and qalqalah. Returns (class index per token or None to drop, number of classes).
+    """
+    names, idx = {}, []
+    for t in tokens:
+        ch, n = t[0], (int(t[1:]) if len(t) > 1 else 1)
+        if ch == "ڇ":
+            idx.append(None); continue
+        if ch in "اۥۦ":
+            key = ch                      # any length of the same long vowel
+        elif ch in "نں":
+            key = "ن2" if (ch == "ن" and n >= 2) else "ن" if ch == "ن" else "ن2"
+        elif ch in "م۾":
+            key = "م2" if (ch == "م" and n >= 2) else "م" if ch == "م" else "م2"
+        else:
+            key = t
+        idx.append(names.setdefault(key, len(names)))
+    return idx, len(names)
+
+
+def to_basic(logp, tokens, ids, groups):
+    """Collapses frame probabilities and an expected sequence to the basic classes."""
+    cls, k = basic_classes(tokens)
+    p = logp.exp()
+    out = torch.zeros(p.shape[0], k + 1)
+    for i, c in enumerate(cls):
+        out[:, k if c is None else c] += p[:, i]     # dropped tokens count as silence
+    out[:, k] += p[:, len(tokens)]
+    new_ids, new_groups = [], []
+    for i, g in zip(ids, groups):
+        c = cls[i]
+        if c is None or (new_ids and new_ids[-1] == c):
+            continue
+        new_ids.append(c); new_groups.append(g)
+    return out.clamp_min(1e-9).log(), new_ids, new_groups, k
