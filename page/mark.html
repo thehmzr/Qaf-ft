@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mark ayah ends</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f2f5f4;--surface:#fff;--ink:#13201f;--muted:#5a6866;--line:#d6dedc;--accent:#0b6e6a;--accent-soft:#d9eeec;--good:#1d7a45;--warn:#9a5a00}
+@media (prefers-color-scheme: dark){:root{--paper:#0f1716;--surface:#172221;--ink:#e6efed;--muted:#93a3a0;--line:#2a3937;--accent:#4fc4bd;--accent-soft:#17403d;--good:#5bc98a;--warn:#e0a44a;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.45 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:900px;margin:0 auto;padding:22px 16px 60px;display:flex;flex-direction:column;gap:14px}
+nav{display:flex;gap:14px;font-size:14px} nav a{color:var(--accent)}
+h1{margin:0;font-size:22px}
+.help{color:var(--muted);font-size:14px;margin:0}
+kbd{font:12px/1 ui-monospace,monospace;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:2px 5px;background:var(--surface)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px}
+.now{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.lab{font-size:13px;color:var(--muted);display:flex;gap:10px;align-items:baseline}
+.lab b{color:var(--ink);font-size:15px}
+.text{direction:rtl;font-family:"Amiri Quran",serif;font-size:30px;line-height:2.1;margin-top:6px}
+.next .text{font-size:22px;color:var(--muted)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button,select,input[type=number]{font:inherit;font-size:14px;padding:6px 12px;border-radius:7px;border:1px solid var(--accent);background:var(--surface);color:var(--accent)}
+button{cursor:pointer} button:hover{background:var(--accent-soft)}
+button.big{font-size:16px;padding:10px 18px;font-weight:600}
+.bar{height:10px;background:var(--line);border-radius:5px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}
+.meta{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.saved{color:var(--good)} .unsaved{color:var(--warn)}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+td,th{border-bottom:1px solid var(--line);padding:4px 8px;text-align:left}
+td.ar{direction:rtl;font-family:"Amiri Quran",serif;font-size:16px;text-align:right}
+.wrap{max-height:260px;overflow:auto}
+</style>
+</head>
+<body>
+<main>
+  <nav><a href="index.html">Progress</a><a href="long.html">Long recitation</a><a href="mark.html">Mark ayah ends</a></nav>
+  <h1>Mark where each ayah ends</h1>
+  <p class="help">Press <kbd>Space</kbd> the moment the ayah shown in the box ends; the next ayah starts there.
+    <kbd>Backspace</kbd> undoes the last mark and jumps back to just before it. <kbd>←</kbd>/<kbd>→</kbd> move 5 s,
+    <kbd>P</kbd> play or pause. Marks save by themselves; you can stop and come back.</p>
+  <div class="row">
+    <button class="big" id="play">Play</button>
+    <label>Speed <select id="rate"><option>1</option><option>1.25</option><option selected>1.5</option><option>1.75</option><option>2</option></select></label>
+    <label>Reaction <input type="number" id="react" value="0.20" step="0.05" min="0" max="1" style="width:5em"> s</label>
+    <span class="meta" id="clock">0:00</span>
+    <span class="meta" id="save"></span>
+  </div>
+  <div class="bar"><i id="prog" style="width:0%"></i></div>
+  <div class="meta" id="count"></div>
+  <section class="card now"><div class="lab"><b id="curLab"></b><span>now</span></div><div class="text" id="curText"></div></section>
+  <section class="card next"><div class="lab"><b id="nextLab"></b><span>next</span></div><div class="text" id="nextText"></div></section>
+  <section class="card"><div class="lab"><b>Marks</b><span>click a row to hear its last 3 seconds</span></div>
+    <div class="wrap"><table><thead><tr><th>#</th><th>Ayah</th><th>Ends at</th><th></th></tr></thead><tbody id="rows"></tbody></table></div></section>
+</main>
+<audio id="audio" preload="auto"></audio>
+<script>
+(function(){
+  var params=new URLSearchParams(location.search), set=params.get("set")||"fatihah_baqarah";
+  var base="/long/"+encodeURIComponent(set)+"/", audio=document.getElementById("audio");
+  var items=[], marks=[], dirty=false, saving=false;
+  var NAMES={1:"Al-Fatihah",2:"Al-Baqarah"};
+  function $(id){return document.getElementById(id)}
+  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+  function label(it){return it.kind==="amin"?"آمين (not part of an ayah)":(NAMES[it.sura]||"Sura "+it.sura)+" "+it.ayah}
+  function fmt(t){t=Math.max(0,t);var m=Math.floor(t/60),s=(t%60).toFixed(1);return m+":"+(s<10?"0":"")+s}
+  function backup(){try{localStorage.setItem("marks:"+set,JSON.stringify(marks))}catch(e){}}
+  function save(){
+    if(saving){dirty=true;return} saving=true; dirty=false;
+    $("save").textContent="saving…"; $("save").className="meta unsaved";
+    fetch(base+"marks.json",{method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({set:set,updated:Date.now(),reaction:+$("react").value,marks:marks})})
+      .then(function(r){if(!r.ok)throw new Error(r.status);$("save").textContent="saved";$("save").className="meta saved"})
+      .catch(function(){$("save").textContent="not saved to disk (kept in this browser)";$("save").className="meta unsaved"})
+      .finally(function(){saving=false;if(dirty)save()});
+  }
+  function render(){
+    var k=marks.length, cur=items[k], nxt=items[k+1];
+    $("curLab").textContent=cur?label(cur):"All done"; $("curText").textContent=cur?cur.text:"Every ayah has an end mark. Thank you.";
+    $("nextLab").textContent=nxt?label(nxt):""; $("nextText").textContent=nxt?nxt.text:"";
+    $("count").textContent=k+" of "+items.length+" marked";
+    $("prog").style.width=(100*k/items.length)+"%";
+    var h=""; for(var i=marks.length-1;i>=0&&i>=marks.length-40;i--){var m=marks[i];
+      h+='<tr data-i="'+i+'"><td>'+(i+1)+'</td><td class="ar">'+esc(label(items[i]))+'</td><td>'+fmt(m.end)+'</td><td><button data-hear="'+i+'">hear end</button></td></tr>'}
+    $("rows").innerHTML=h;
+  }
+  function mark(){
+    if(marks.length>=items.length||!audio.src)return;
+    var t=audio.currentTime-(+$("react").value||0)*audio.playbackRate;
+    var prev=marks.length?marks[marks.length-1].end:0;
+    if(t<=prev+0.2)return;                       // too close to the last mark
+    var it=items[marks.length];
+    marks.push({sura:it.sura,ayah:it.ayah,kind:it.kind,end:+t.toFixed(3)});
+    backup(); render(); save();
+  }
+  function undo(){
+    if(!marks.length)return;
+    var m=marks.pop(); backup(); render(); save();
+    audio.currentTime=Math.max(0,m.end-3);
+  }
+  function hear(i){var m=marks[i];audio.currentTime=Math.max(0,m.end-3);audio.play();setTimeout(function(){if(audio.currentTime>=m.end+0.6)audio.pause()},(3.8/audio.playbackRate)*1000)}
+  $("play").onclick=function(){if(audio.paused){audio.play();this.textContent="Pause"}else{audio.pause();this.textContent="Play"}};
+  $("rate").onchange=function(){audio.playbackRate=+this.value};
+  audio.addEventListener("timeupdate",function(){$("clock").textContent=fmt(audio.currentTime)+" / "+fmt(audio.duration||0)});
+  audio.addEventListener("play",function(){$("play").textContent="Pause"});
+  audio.addEventListener("pause",function(){$("play").textContent="Play"});
+  document.addEventListener("click",function(e){var b=e.target.closest("[data-hear]");if(b)hear(+b.dataset.hear)});
+  document.addEventListener("keydown",function(e){
+    if(e.target.tagName==="INPUT"||e.target.tagName==="SELECT")return;
+    if(e.code==="Space"){e.preventDefault();mark()}
+    else if(e.code==="Backspace"){e.preventDefault();undo()}
+    else if(e.code==="ArrowLeft"){audio.currentTime=Math.max(0,audio.currentTime-5)}
+    else if(e.code==="ArrowRight"){audio.currentTime+=5}
+    else if(e.key==="p"||e.key==="P"){$("play").click()}
+  });
+  Promise.all([
+    fetch(base+"sequence.json",{cache:"no-store"}).then(function(r){return r.json()}),
+    fetch(base+"marks.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).catch(function(){return null})
+  ]).then(function(res){
+    items=res[0].items;
+    var disk=res[1]&&res[1].marks||[], local=[];
+    try{local=JSON.parse(localStorage.getItem("marks:"+set)||"[]")}catch(e){}
+    marks=local.length>disk.length?local:disk;
+    if(res[1]&&res[1].reaction!=null)$("react").value=res[1].reaction;
+    audio.src=base+"audio16k.wav"; audio.playbackRate=+$("rate").value;
+    audio.addEventListener("loadedmetadata",function(){audio.playbackRate=+$("rate").value;if(marks.length)audio.currentTime=Math.max(0,marks[marks.length-1].end-2)},{once:true});
+    render(); if(local.length>disk.length)save();
+  }).catch(function(){$("count").textContent="Could not load the ayah list."});
+})();
+</script>
+</body>
+</html>

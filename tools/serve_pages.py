@@ -2,6 +2,7 @@
 
   python tools/serve_pages.py [--port 8777]
 
+POST /long/NAME/marks.json saves ayah-end marks from mark.html.
 /long/NAME/ayahs/... serves the ayah clips made by data_tools/ayah_clips.py (page long.html).
 /state.json is built on each request from data/page_state.json, with live progress
 for jobs that have a "live" entry (lines counted in result files). The time left is worked
@@ -115,6 +116,27 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.wfile.write(body)
             return
         super().do_GET()
+
+    def do_POST(self):
+        """Saves ayah-end marks from mark.html: only DIR/marks.json under data/long, from this machine."""
+        host = (self.headers.get("Host") or "").split(":")[0]
+        path = self.path.split("?")[0]
+        if host not in ("127.0.0.1", "localhost") or not path.startswith("/long/") or not path.endswith("/marks.json"):
+            self.send_error(403); return
+        f = os.path.realpath(os.path.join(LONG, path[len("/long/"):]))
+        n = int(self.headers.get("Content-Length") or 0)
+        if not f.startswith(LONG + os.sep) or os.path.basename(f) != "marks.json" or not 0 < n < 2_000_000 \
+                or not os.path.isdir(os.path.dirname(f)):
+            self.send_error(400); return
+        try:
+            body = json.loads(self.rfile.read(n))
+            assert isinstance(body.get("marks"), list)
+        except Exception:
+            self.send_error(400); return
+        tmp = f + ".tmp"
+        json.dump(body, open(tmp, "w"), ensure_ascii=False, indent=0)
+        os.replace(tmp, f)
+        self.send_response(204); self.end_headers()
 
     def log_message(self, *a):
         pass

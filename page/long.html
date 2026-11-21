@@ -36,7 +36,7 @@ button:hover{background:var(--accent-soft)} button:focus-visible{outline:2px sol
 </head>
 <body>
 <main>
-  <nav><a href="index.html">Progress</a><a href="system.html">System</a><a href="long.html">Long recitation</a></nav>
+  <nav><a href="index.html">Progress</a><a href="system.html">System</a><a href="long.html">Long recitation</a><a href="mark.html">Mark ayah ends</a></nav>
   <h1 id="title">Long recitation, ayah by ayah</h1>
   <p class="lede">Plays the whole recording without gaps; the page follows the ayah and word being recited. A long recitation, checked by ear: no mistakes in words or vowels; only a very few tajweed slips (madd lengths and the like). It is cut into ayahs by the word times the model found. Click a word to play from it. Thresholds are set on the first half of this recitation. Grey words could not be matched in the audio.</p>
   <p class="lede" id="meaning"></p>
@@ -62,7 +62,7 @@ button:hover{background:var(--accent-soft)} button:focus-visible{outline:2px sol
   function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
   function pad(n){return ("00"+n).slice(-3)}
   var NAMES={1:"Al-Fatihah",2:"Al-Baqarah",3:"Al Imran"};
-  function label(a){var n=NAMES[a.sura]||("Sura "+a.sura);return a.ayah===0?n+" · basmala":n+" "+a.ayah}
+  function label(a){if(a.kind==="amin")return "آمين (not part of an ayah)";var n=NAMES[a.sura]||("Sura "+a.sura);return a.ayah===0?n+" · basmala":n+" "+a.ayah}
   function thr(){var m=$("mode").value, t=data.thresholds["own-half/"+m]||{};return {m:m,flag:t.flag,strong:t.strong}}
   function cls(w,t){if(w.start==null)return "miss";var v=w[t.m];if(v==null||t.flag==null)return "";return v>t.strong?"strong":v>t.flag?"flag":""}
   function visible(){var t=thr();return data.ayahs.map(function(a,i){return i}).filter(function(i){return $("flagsOnly").value==="all"||data.ayahs[i].words.some(function(w){var c=cls(w,t);return c==="flag"||c==="strong"})})}
