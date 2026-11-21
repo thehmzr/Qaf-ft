@@ -156,3 +156,36 @@ Reading: dropping tajweed detail does not lower the flags. At 1% it flags more, 
 threshold falls further on studio audio than the scores do on phone audio. Strong flags stay the
 same (21% vs 22%): the words that fail clearly fail on letters and vowels, not on lengths. The gap
 is acoustic, which points to the phone fine-tune. One labeller, small sample.
+
+## Studio ayah clips from held-out voices (whole sura recordings cut by ayah timings)
+Commands: eval/studio_clips.py heldout / score / report; clips cut by data_tools/studio_clips.py.
+Voices r06, r10 (never trained on) and r08 (the base model may have heard it): suras 2 (ayahs
+1-100), 18, 36, 55, 67, 78-114; about 920-960 ayah clips and 6,500-6,700 printed words each. Each
+ayah is scored as a whole ayah (it ends at a pause, so the ayah form is what is said), every
+printed word in both modes. Thresholds from `studio-val` (moshaf 19.0, 300 clips, 2,068 sound
+groups): tajweed 0.77 (1%) / 9.15 (0.1%), words and vowels 0.64 / 9.02.
+
+| Voice | Mode | Words flagged (1% thr) | Ayahs with a flag | Words flagged (0.1% thr) | Ayahs | Own-half split: words / ayahs (1%) |
+|---|---|---|---|---|---|---|
+| r06 | tajweed | 8.5% | 36.8% | 0.98% | 6.5% | 0.67% / 6.3% |
+| r06 | words and vowels | 3.8% | 20.8% | 0.49% | 3.1% | 0.11% / 0.8% |
+| r10 | tajweed | 5.4% | 30.6% | 0.26% | 1.7% | 0.52% / 5.0% |
+| r10 | words and vowels | 2.8% | 15.9% | 0.20% | 1.3% | 0.73% / 7.2% |
+| r08 | tajweed | 5.9% | 33.0% | 0.17% | 1.2% | 1.64% / 15.9% |
+| r08 | words and vowels | 2.4% | 13.5% | 0.15% | 1.1% | 2.96% / 23.3% |
+
+Word badness median is about 0.1 in every voice; the 99th percentile is 3.5-8.9 against 0.77 on
+`studio-val`, so the `studio-val` 1% threshold sits far too low for long ayah clips in new voices:
+the tail, not the bulk, moves. A planted mistake per clip is caught 99% of the time at that flag
+threshold (tajweed) and 79% in words-and-vowels mode, 86% / 73% at the strong threshold.
+The own-half thresholds are much higher (3-10) and are noisy at 0.1% (a few thousand words).
+
+Word edges from CTC forced alignment against the per-word timing tables (r10: 5,052 words; r08:
+4,339): start error median 0.07-0.08 s, 90th percentile 0.19 s; end error median 0.13-0.14 s,
+90th percentile 0.41-0.44 s. Both edges come early (median -0.05 s start, -0.12 s end): CTC
+spikes sit at the start of a sound and trailing lengthening is cut short, so durations from the
+alignment alone will run short; end edges need a correction or a duration model of their own.
+
+Limits: studio audio; `studio-val` thresholds are on sound groups of segments up to 20 s, here
+printed words of whole ayahs up to 45 s (17 longer clips skipped); the timing tables are taken
+as truth and have their own error; planted mistakes are text-side.

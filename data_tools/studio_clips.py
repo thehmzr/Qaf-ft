@@ -73,12 +73,18 @@ def clips(voice, suras, max_ayah=None):
         metas = clip_meta(voice, sura, max_ayah.get(sura))
         if not metas:
             continue
-        wav = load_sura(voice, sura)
+        f = sf.SoundFile(path)
+        sr = f.samplerate
         for m in metas:
-            a, b = int(m["start"] * SR), min(len(wav), int(m["end"] * SR))
-            if b - a < SR // 4:
+            a, b = int(m["start"] * sr), min(f.frames, int(m["end"] * sr))
+            if b - a < sr // 4:
                 continue
-            yield m, wav[a:b]
+            f.seek(a)   # read only this ayah, so long suras never sit in memory whole
+            w = torch.from_numpy(f.read(b - a, dtype="float32", always_2d=True).mean(1))
+            if sr != SR:
+                w = torchaudio.functional.resample(w, sr, SR)
+            yield m, w.numpy()
+        f.close()
 
 
 def main():
