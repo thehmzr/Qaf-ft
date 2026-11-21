@@ -23,9 +23,10 @@ Current target: words and vowels. Tajweed judging comes last.
 - Token error on two held-out reciters, all suras: 0.43% (pilot 1.2%).
 - Checker, 800 held-out clips with one planted mistake each: AUC 0.999; caught at 5% / 1% / 0.1%
   false flags: 99.9% / 98.3% / 92.1%.
-- Phone audio: on 25 hand-labelled doubted correct clips the checker flags 38-56% of words
-  at the studio threshold, with or without tajweed judged; about a third of scored phone clips
-  match their claimed ayah within 5% on words and vowels.
+- Thresholds per mode now come from a named set (`studio-val`). At those thresholds, phone
+  clips judged correct: 36% of words and 78% of ayahs flagged in both modes; 7 controls that
+  decode within 2% of their ayah: none flagged. On the long recitation: 7.6% of words (tajweed
+  judged) and 3.3% (words and vowels), mostly at the first or last word of a piece.
 - No WER or CER: the model outputs sound tokens, not text.
 
 Every experiment: `results.md`. Details and sources: `research_summary.md`.
