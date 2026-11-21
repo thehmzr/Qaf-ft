@@ -264,3 +264,12 @@ Keep the current score in the verifier.
 On the long correct recitation in a new voice (sura 2, thresholds from the first half, test on
 the second), false flags at the 1% / 0.1% thresholds: GOP 0.75% / 0.31% tajweed judged and
 0.82% / 0.10% words and vowels; current 0.85% / 0.03% and 1.02% / 0.20%. No clear gain.
+
+## What decides the false flags (21 Nov)
+- The typical word scores the same in every voice; only the high tail moves with voice and
+  recording. Thresholds from one studio voice therefore over-flag new voices and phones.
+- Normalising scores per clip without labels does not help: in short clips the mistake is the
+  clip's outlier, so normalising hides it. Raw scores stay; thresholds are set per recording
+  condition (studio, phone) from that condition's correct words.
+- Words next to a pause carry most false flags; inside a phrase a new voice is near studio level.
+- mdd_d is not usable as a mistake benchmark (chunk extents and labels do not match the audio).
