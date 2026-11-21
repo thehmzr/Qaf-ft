@@ -38,7 +38,10 @@ kbd{font:11px var(--ui);border:1px solid var(--line);border-bottom-width:2px;bor
 .word{font:inherit;padding:0 8px;border-radius:10px;border:2px solid transparent;background:none;color:var(--ink);position:relative}
 .word:hover{background:var(--paper)}
 .word.sel{border-color:var(--accent);background:var(--soft)}
+.word.prop{border-color:#c98a00;border-style:dashed;background:#fff4d6}
+.word.rej{border-color:var(--good);border-style:dashed}
 .word.bad{background:var(--critsoft);border-color:var(--crit)}
+.word .tag.q{background:#c98a00}.word .tag.ok{background:var(--good)}
 .word.bad.sel{box-shadow:0 0 0 3px var(--soft)}
 .word .tag{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);font:600 10px var(--ui);background:var(--crit);color:#fff;border-radius:999px;padding:1px 7px;white-space:nowrap;direction:ltr}
 .plain .word span{color:inherit!important}
@@ -109,6 +112,7 @@ summary{cursor:pointer;font-weight:600}
     <div class="ayah" id="words"></div>
     <div class="legend" id="legend"></div>
     <p class="hint" id="hint">Tap a word that was recited wrongly.</p>
+    <div class="row" id="propbar" hidden style="justify-content:center;margin-top:8px"><span class="note" style="margin:0" id="proptext"></span><button id="rejectAll">None of these are mistakes</button></div>
     <div class="tray" id="tray" hidden>
       <div class="row"><b id="trayWord"></b><span class="note" style="margin:0">What went wrong?</span><span style="flex:1"></span><button id="clearWord">Not a mistake</button></div>
       <div class="row"><span class="note" style="margin:0">Its sounds (tap one to change what was said):</span></div>
@@ -158,15 +162,21 @@ summary{cursor:pointer;font-weight:600}
 <script>
 (function(){
   var $=function(i){return document.getElementById(i)};
-  var meta=null, ayah=null, marks={}, sel=null, wav=null, siteVal={}, kind="usable", repeatOf=null, source=null;
+  var meta=null, ayah=null, marks={}, sel=null, wav=null, siteVal={}, kind="usable", repeatOf=null, source=null, props={}, blind=false;
   var recorder=null, chunks=[], t0=0, tick=null, actx=null, analyser=null;
   function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
   function status(t,k){var s=$("status");s.textContent=t;s.className=k||""}
   function offSites(){return Object.keys(siteVal).filter(function(i){return siteVal[i]!=="as expected"}).length}
+  function undecided(){return Object.keys(props).filter(function(i){return !props[i].decision}).length}
   function refresh(){
     var n=Object.keys(marks).length+offSites(), clean=n===0&&kind==="usable";
-    $("saveok").disabled=!(ayah&&wav&&clean);
-    $("save").disabled=!(ayah&&wav&&!clean);
+    var u=undecided(), np=Object.keys(props).length;
+    $("propbar").hidden=!np;
+    if(np)$("proptext").textContent=u?"The model suggests "+np+" word"+(np===1?"":"s")+" (dashed). "+u+" still to decide: tap each one.":"All suggestions decided.";
+    $("rejectAll").hidden=!u;
+    var hold=u>0&&kind==="usable";
+    $("saveok").disabled=!(ayah&&wav&&clean)||hold;
+    $("save").disabled=!(ayah&&wav&&!clean)||hold;
     $("save").textContent=kind!=="usable"?"Save as unusable and next":"Save with "+n+" mark"+(n===1?"":"s")+" and next";
     $("hint").hidden=sel!==null;
   }
@@ -176,7 +186,9 @@ summary{cursor:pointer;font-weight:600}
     $("words").className="ayah"+($("colours").checked?"":" plain");
     $("words").innerHTML=ayah.coloured.map(function(parts,i){
       var inner=parts.map(function(p){return p[1]?'<span style="color:'+cm[p[1]]+'">'+esc(p[0])+'</span>':esc(p[0])}).join("");
-      return '<button class="word'+(marks[i]?' bad':'')+(sel===i?' sel':'')+'" data-i="'+i+'">'+inner+(marks[i]?'<span class="tag">'+esc(marks[i].type)+'</span>':'')+'</button>'}).join("");
+      var pr=props[i], cls=marks[i]?' bad':pr&&!pr.decision?' prop':pr&&pr.decision==="rejected"?' rej':'';
+      var tag=marks[i]?'<span class="tag">'+esc(marks[i].type)+'</span>':pr&&!pr.decision?'<span class="tag q">'+(pr.strength==="strong"?"model: likely":"model: maybe")+'</span>':pr&&pr.decision==="rejected"?'<span class="tag ok">fine</span>':'';
+      return '<button class="word'+cls+(sel===i?' sel':'')+'" data-i="'+i+'">'+inner+tag+'</button>'}).join("");
     var t=$("tray");t.hidden=sel===null;
     if(sel!==null){
       $("trayWord").textContent=ayah.words[sel];
@@ -189,7 +201,8 @@ summary{cursor:pointer;font-weight:600}
     }
     refresh();
   }
-  function setMistake(m){if(sel===null)return;marks[sel]={type:m,heard:marks[sel]?marks[sel].heard:""};drawWords()}
+  function setMistake(m){if(sel===null)return;marks[sel]={type:m,heard:marks[sel]?marks[sel].heard:"",sounds:marks[sel]?marks[sel].sounds:undefined};if(props[sel])props[sel].decision="confirmed";drawWords()}
+  $("rejectAll").onclick=function(){Object.keys(props).forEach(function(i){if(!props[i].decision)props[i].decision="rejected"});drawWords()};
   $("words").addEventListener("click",function(e){var b=e.target.closest(".word");if(!b)return;var i=+b.dataset.i;sel=sel===i?null:i;drawWords()});
   $("trayChips").addEventListener("click",function(e){var b=e.target.closest(".chip");if(b)setMistake(b.dataset.m)});
   $("traySounds").addEventListener("click",function(e){var b=e.target.closest(".snd");if(!b||sel===null)return;
@@ -200,8 +213,8 @@ summary{cursor:pointer;font-weight:600}
     var cur=m.sounds[pos],k=cur===undefined?-1:seq.map(function(a){return a.now}).indexOf(cur.now);
     if(k+1>=seq.length){delete m.sounds[pos]}else{m.sounds[pos]={now:seq[k+1].now,was:x.t};m.type=seq[k+1].kind}
     if(!Object.keys(m.sounds).length&&!marks[sel]){drawWords();return}
-    marks[sel]=m;if(!Object.keys(m.sounds).length)delete m.sounds;drawWords()});
-  $("clearWord").onclick=function(){if(sel!==null){delete marks[sel];sel=null;drawWords()}};
+    marks[sel]=m;if(!Object.keys(m.sounds).length)delete m.sounds;if(props[sel])props[sel].decision="confirmed";drawWords()});
+  $("clearWord").onclick=function(){if(sel!==null){delete marks[sel];if(props[sel])props[sel].decision="rejected";sel=null;drawWords()}};
   $("heard").oninput=function(){if(sel!==null&&marks[sel])marks[sel].heard=this.value};
   function siteOptions(x){return x.kind==="madd"?["as expected","1 count","2 counts","3 counts","4 counts","5 counts","6 counts","longer than 6"]:["as expected","missing","too short","too long"]}
   function drawSites(){
@@ -221,7 +234,7 @@ summary{cursor:pointer;font-weight:600}
     $("aya").max=max;
     ayah=await (await fetch("/ayah?s="+s+"&a="+a)).json();
     ayah.wordOfGroup=ayah.sites.every(function(x){return x.group<ayah.words.length});
-    marks={};sel=null;siteVal={};kind="usable";drawWords();drawSites();drawKinds();
+    marks={};sel=null;siteVal={};kind="usable";props={};blind=false;drawWords();drawSites();drawKinds();
   }
   function step(d){var s=+$("sura").value,a=+$("aya").value+d;
     if(a>meta.sizes[s-1]){s=s<114?s+1:1;a=1}else if(a<1){s=s>1?s-1:114;a=meta.sizes[s-1]}
@@ -280,7 +293,8 @@ summary{cursor:pointer;font-weight:600}
     var label={sura:ayah.sura,aya:ayah.aya,words:ayah.words,reciter:$("reciter").value.trim(),clip_kind:kind,
       verdict:kind!=="usable"?"unusable":(list.length||offSites())?"mistake":"correct",marks:list,sites:sites};
     if(repeatOf)label.repeat_of=repeatOf;
-    if(source)label.source=source;
+    if(source){label.source=source;label.blind=blind;
+      label.proposals=Object.keys(props).map(function(i){return {word:+i,strength:props[i].strength,decision:props[i].decision||"undecided"}})}
     var j=new TextEncoder().encode(JSON.stringify(label)),head=new Uint8Array(4);new DataView(head.buffer).setUint32(0,j.length);
     $("save").disabled=$("saveok").disabled=true;
     try{var r=await fetch("/save",{method:"POST",body:new Blob([head,j,wav])});var d=await r.json();if(!r.ok)throw new Error(d.error);
@@ -296,8 +310,10 @@ summary{cursor:pointer;font-weight:600}
     var d=await (await fetch("/queue")).json();
     if(d.none){$("recnote").textContent=d.why==="batch finished"?"Batch finished: all "+d.total+" clips are labelled.":"No batch found. Unzip a batch into the data/queue folder.";return}
     $("sura").value=d.sura;$("aya").value=d.aya;await loadAyah();
-    source=d.file;await setAudio(await (await fetch("/queue/audio?file="+encodeURIComponent(d.file))).blob());
-    $("recnote").textContent="Batch clip "+(d.done+1)+" of "+d.total+". Listen, mark what is wrong, save.";
+    source=d.file;blind=!!d.blind;props={};
+    if(!blind)(d.proposals||[]).forEach(function(x){var w=Math.min(x.word,ayah.words.length-1);props[w]={strength:x.strength,decision:null}});
+    drawWords();await setAudio(await (await fetch("/queue/audio?file="+encodeURIComponent(d.file))).blob());
+    $("recnote").textContent="Batch clip "+(d.done+1)+" of "+d.total+(blind?". No hints on this one: listen and mark what is wrong.":". Listen, then confirm or reject the model's suggestions and add anything it missed.");
     var p=$("player");p.play().catch(function(){});
   }
   $("queue").onclick=nextQueue;
