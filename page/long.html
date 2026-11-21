@@ -76,7 +76,7 @@ button:hover{background:var(--accent-soft)} button:focus-visible{outline:2px sol
       h+='<section class="ayah" id="a'+i+'"><div class="head"><b>'+esc(label(a))+'</b><span>'+(a.end-a.start).toFixed(1)+' s</span>'+(nf?'<span>'+nf+' flagged</span>':'')+(a.missing?'<span>'+a.missing+' word'+(a.missing>1?'s':'')+' not matched</span>':'')+'<button data-play="'+i+'" style="margin-left:auto">Play</button></div><div class="text">'+
         a.words.map(function(w,k){var c=cls(w,t);return '<span class="w '+c+'" data-i="'+i+'" data-k="'+k+'"'+(w.start!=null?' data-t="'+w.start+'"':'')+' title="'+(w[t.m]!=null?'score '+w[t.m]:'no score')+'">'+esc(w.text)+'</span>'}).join(" ")+'</div></section>'});
     $("list").innerHTML=h||'<p class="lede">No ayah matches this filter.</p>';
-    $("status").textContent=data.ayahs.length+" ayahs · "+(data.ayahs.reduce(function(s,a){return s+a.end-a.start},0)/60).toFixed(0)+" min";
+    $("status").textContent=(data.fromMarks?data.fromMarks+" ends checked by ear · ":"")+data.ayahs.length+" ayahs · "+(data.ayahs.reduce(function(s,a){return s+a.end-a.start},0)/60).toFixed(0)+" min";
   }
   // gapless: one continuous stream of the whole recording; ayahs and words are found by time
   function abs(a,w,key){var v=w["abs_"+key];return v!=null?v:(w[key]==null?null:a.start+w[key])}
@@ -114,11 +114,19 @@ button:hover{background:var(--accent-soft)} button:focus-visible{outline:2px sol
   $("prev").onclick=function(){step(-1)}; $("next").onclick=function(){step(1)};
   $("mode").onchange=render; $("flagsOnly").onchange=render;
   document.addEventListener("keydown",function(e){if(e.target.tagName==="SELECT"||e.target.tagName==="INPUT")return;if(e.key===" "){e.preventDefault();$("play").click()}else if(e.key==="ArrowRight")step(-1);else if(e.key==="ArrowLeft")step(1)});
+  function useMarks(m){            // checked ayah ends from mark.html, when there are any
+    if(!m||!m.marks||!m.marks.length)return;
+    data.ayahs.forEach(function(a){a.words.forEach(function(w){if(w.abs_start==null&&w.start!=null){w.abs_start=a.start+w.start;w.abs_end=a.start+w.end}})});
+    var by={};data.ayahs.forEach(function(a){by[(a.kind||"ayah")+":"+a.sura+":"+a.ayah]=a});
+    var prev=0;m.marks.forEach(function(x){var a=by[(x.kind||"ayah")+":"+x.sura+":"+x.ayah];if(x.end==null)return;if(a){a.start=prev;a.end=x.end}prev=x.end});
+    data.fromMarks=m.marks.filter(function(x){return x.checked}).length;
+  }
   function load(k){
     if(k>=dirs.length){$("status").innerHTML='<span class="err">No ayah clips found for "'+esc(set)+'".</span>';return}
     var b="/long/"+encodeURIComponent(set)+"/"+encodeURIComponent(dirs[k])+"/";
     fetch(b+"ayahs.json",{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()})
-      .then(function(d){base=b;data=d;render()}).catch(function(){load(k+1)});
+      .then(function(d){base=b;data=d;return fetch("/long/"+encodeURIComponent(set)+"/marks.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null}).catch(function(){return null})})
+      .then(function(m){if(!data)return;useMarks(m);render()}).catch(function(){if(!data)load(k+1)});
   }
   load(0);
 })();
