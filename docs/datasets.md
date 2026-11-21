@@ -106,6 +106,8 @@ Citation: the card gives none. The paper is arXiv:2509.00094, "Automatic Pronunc
 
 **Licence.** No licence tag, no LICENSE file, card silent. It is a derivative of a CC BY 4.0-tagged set, so the upstream terms still apply; the mirror adds no grant of its own. Not gated.
 
+**Duplicates.** The same recording appears under different ids, so holdout clips must be removed by audio (decoded-sample fingerprint), not by file name.
+
 **Fit for this project.** Train with care, and evaluate. This is the closest thing to real learner audio, but labels are the intended text, not what was said; use it for robustness to real microphones and for weakly supervised training, and filter by an alignment score before trusting any clip. Use the mirror for convenience (16 kHz, decodable), credit the upstream. Exclude the 200 `tlog_holdout` clips.
 
 ---
@@ -366,7 +368,7 @@ The stricter reading (evaluation only, no redistribution, and the NPL-1.2 model 
 
 **What it is.** 159 recordings of one ayah (5:109, `قَالُوا۟ لَا عِلْمَ لَنَآ إِنَّكَ أَنتَ عَلَّٰمُ ٱلْغُيُوبِ`) by 159 different speakers of mixed age and gender, with real mistakes, re-annotated for madd lengths, ghunnah, qalqalah, and a full phonetic transcript of what was actually said.
 
-**How it was built.** Derived from QDAT (an earlier set of about 1,500 clips: 160 or 161 speakers each recording the same verse about ten times). The authors kept one randomly chosen clip per speaker and re-annotated it. Paper: "The dataset was annotated by a single hafiz of the Moshaf with Tajweed knowledge"; and in limitations, "qdat_bench uses a single annotator and one verse".
+**How it was built.** Audio traces back to 11 kHz messaging-app recordings, so it is narrowband (phone-like). Derived from QDAT (an earlier set of about 1,500 clips: 160 or 161 speakers each recording the same verse about ten times). The authors kept one randomly chosen clip per speaker and re-annotated it. Paper: "The dataset was annotated by a single hafiz of the Moshaf with Tajweed knowledge"; and in limitations, "qdat_bench uses a single annotator and one verse".
 
 **Format.**
 - One split, `train` (it is a test set despite the name): 159 rows, `data/train-00000-of-00001.parquet`, 85.9 MB.

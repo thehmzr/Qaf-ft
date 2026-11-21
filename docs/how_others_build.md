@@ -71,6 +71,9 @@ generalise (95-99% reported by simple classifiers).
 Adopted: fixed "probe ayahs" that every reciter records, so reciters can be compared on
 identical text; marking tajweed at named sites with a measured length, not a vague flag.
 
+- Caution: the 95-99% results reported on QDAT come from a random clip split with about ten
+  takes per speaker, so the same voices are in train and test (speaker leakage).
+
 ## 5. Real phone audio with unverified labels (app recordings, about 393,000 clips)
 
 - Ordinary users reciting into phones; the label is whatever ayah the app expected.
