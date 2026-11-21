@@ -14,6 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAGES = os.path.join(ROOT, "page")
 STATE = os.path.join(ROOT, "data", "page_state.json")
 LONG = os.path.realpath(os.path.join(ROOT, "data", "long"))
+SAMPLES = os.path.realpath(os.path.join(ROOT, "data", "eval", "listen", "samples"))
 HISTORY = collections.defaultdict(collections.deque)    # job id -> recent (time, done), for the rate
 
 
@@ -66,9 +67,10 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             self.send_error(403)
             return
         path = self.path.split("?")[0]
-        if path.startswith("/long/"):              # ayah clips of a long recitation (local data)
-            f = os.path.realpath(os.path.join(LONG, path[len("/long/"):]))
-            if not f.startswith(LONG + os.sep) or not f.endswith((".wav", ".json")) or not os.path.isfile(f):
+        if path.startswith(("/long/", "/samples/")):   # local audio: long recitation clips, spliced samples
+            root = LONG if path.startswith("/long/") else SAMPLES
+            f = os.path.realpath(os.path.join(root, path.split("/", 2)[2]))
+            if not f.startswith(root + os.sep) or not f.endswith((".wav", ".json", ".tsv")) or not os.path.isfile(f):
                 self.send_error(404); return
             size = os.path.getsize(f)
             start, end = 0, size - 1
@@ -86,7 +88,8 @@ class Handler(http.server.SimpleHTTPRequestHandler):
                 self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
             else:
                 self.send_response(200)
-            self.send_header("Content-Type", "audio/wav" if f.endswith(".wav") else "application/json; charset=utf-8")
+            self.send_header("Content-Type", "audio/wav" if f.endswith(".wav") else
+                             "text/tab-separated-values; charset=utf-8" if f.endswith(".tsv") else "application/json; charset=utf-8")
             self.send_header("Accept-Ranges", "bytes")
             self.send_header("Content-Length", str(end - start + 1))
             self.send_header("Cache-Control", "no-store")

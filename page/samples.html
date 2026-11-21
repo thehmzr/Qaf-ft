@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Spliced samples</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f2f5f4;--surface:#fff;--ink:#13201f;--muted:#5a6866;--line:#d6dedc;--accent:#0b6e6a;--accent-soft:#d9eeec;--good:#1d7a45;--crit:#b3261e}
+@media (prefers-color-scheme: dark){:root{--paper:#0f1716;--surface:#172221;--ink:#e6efed;--muted:#93a3a0;--line:#2a3937;--accent:#4fc4bd;--accent-soft:#17403d;--good:#5bc98a;--crit:#f0796f;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.45 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:920px;margin:0 auto;padding:22px 16px 60px;display:flex;flex-direction:column;gap:14px}
+nav{display:flex;gap:14px;font-size:14px} nav a{color:var(--accent)}
+h1{margin:0;font-size:22px}
+.help{color:var(--muted);font-size:14px;margin:0;max-width:75ch}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button,select{font:inherit;font-size:14px;padding:5px 11px;border-radius:7px;border:1px solid var(--accent);background:var(--surface);color:var(--accent);cursor:pointer}
+button:hover{background:var(--accent-soft)} button.on{background:var(--accent);color:var(--surface)}
+.item{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.item .meta{font-size:13px;color:var(--muted);min-width:9em}
+.ar{direction:rtl;font-family:"Amiri Quran",serif;font-size:20px}
+.vote button{padding:4px 9px}
+.vote button.yes.on{background:var(--good);border-color:var(--good)} .vote button.no.on{background:var(--crit);border-color:var(--crit)}
+.sum{font-size:14px}
+</style>
+</head>
+<body>
+<main>
+  <nav><a href="index.html">Progress</a><a href="long.html">Long recitation</a><a href="mark.html">Check ayah ends</a><a href="samples.html">Spliced samples</a></nav>
+  <h1>Can you hear the join?</h1>
+  <p class="help">Each clip is a correct studio recitation with one word removed, repeated or swapped in the audio. The test
+    only counts if the joins sound natural, so the model reacts to the change and not to a click or jump. Play each
+    one and mark whether you can hear where it was cut. "Join" plays from 1.5 s before the first cut. Your answers stay in this browser.</p>
+  <div class="row"><select id="kind"><option value="deletion">word removed</option><option value="repetition">word repeated</option><option value="swap">word swapped</option><option value="recalled">model wrote the original (all kinds)</option></select>
+    <span class="sum" id="sum"></span></div>
+  <div id="list"></div>
+</main>
+<audio id="audio"></audio>
+<script>
+(function(){
+  var rows=[], votes={}, audio=document.getElementById("audio"), stopAt=null;
+  function $(id){return document.getElementById(id)}
+  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+  try{votes=JSON.parse(localStorage.getItem("splice-votes")||"{}")}catch(e){}
+  function keep(){try{localStorage.setItem("splice-votes",JSON.stringify(votes))}catch(e){}}
+  var KIND={deletion:"removed",repetition:"repeated",swap:"swapped"};
+  function render(){
+    var k=$("kind").value, list=rows.filter(function(r){return k==="recalled"?r.recalled:r.kind===k&&!r.recalled});
+    $("list").innerHTML=list.map(function(r){var v=votes[r.file];
+      return '<div class="item"><span class="meta">'+esc(r.reciter)+' · '+esc(r.ayah)+' · word '+esc(r.word)+' '+esc(KIND[r.kind]||r.kind)+'</span>'+
+        '<span class="ar">'+esc(r.changed)+(r.inserted?' → '+esc(r.inserted):'')+'</span>'+
+        '<span class="row" style="margin-left:auto"><button data-play="'+esc(r.file)+'">Play</button>'+(r.joins.length?'<button data-join="'+esc(r.file)+'" data-t="'+r.joins[0]+'">Join</button>':'')+
+        '<span class="vote"><button class="yes'+(v==="clean"?" on":"")+'" data-v="clean" data-f="'+esc(r.file)+'">sounds natural</button> <button class="no'+(v==="heard"?" on":"")+'" data-v="heard" data-f="'+esc(r.file)+'">can hear the cut</button></span></span></div>'}).join("")||'<p class="help">No clips here.</p>';
+    var all=rows.filter(function(r){return k==="recalled"?r.recalled:r.kind===k&&!r.recalled}),c=0,h=0;
+    all.forEach(function(r){if(votes[r.file]==="clean")c++;else if(votes[r.file]==="heard")h++});
+    $("sum").textContent=c+" natural, "+h+" with an audible cut, "+(all.length-c-h)+" not judged";
+  }
+  audio.addEventListener("timeupdate",function(){if(stopAt!=null&&audio.currentTime>=stopAt){audio.pause();stopAt=null}});
+  document.addEventListener("click",function(e){
+    var b=e.target.closest("button");if(!b)return;
+    if(b.dataset.play){stopAt=null;audio.src="/samples/"+b.dataset.play;audio.play()}
+    else if(b.dataset.join){var t=+b.dataset.t;audio.src="/samples/"+b.dataset.join;audio.onloadedmetadata=function(){audio.currentTime=Math.max(0,t-1.5);stopAt=t+1.5;audio.play()}}
+    else if(b.dataset.v){votes[b.dataset.f]=votes[b.dataset.f]===b.dataset.v?undefined:b.dataset.v;keep();render()}
+  });
+  $("kind").onchange=render;
+  fetch("/samples/index.tsv",{cache:"no-store"}).then(function(r){return r.text()}).then(function(t){
+    var lines=t.trim().split("\n"),head=lines.shift().split("\t");
+    rows=lines.map(function(l){var c=l.split("\t");return {file:c[0],kind:c[1],reciter:c[2],ayah:c[3],word:c[4],
+      joins:(c[5]||"").split(",").filter(Boolean).map(Number),changed:c[6],inserted:c[7],recalled:c[0].indexOf("recalled/")===0}});
+    render();
+  }).catch(function(){$("list").innerHTML='<p class="help">Could not load the sample list.</p>'});
+})();
+</script>
+</body>
+</html>
