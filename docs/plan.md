@@ -1,5 +1,8 @@
 # Qaf-ft work plan
 
+Version 2: adds the "listen or recall" check (step 2.6), per-reciter reporting, model-free
+clip filters, and a non-Quran share in training, after reading the base model's paper.
+
 For the session that continues this project on the user's own computer. Read
 `handover.md` first for what exists; this file says what to do, in what order, and how to
 know each piece is finished.
@@ -24,6 +27,18 @@ is a separate mode, built last.
    higher at 0.1%, 80% or higher at 1%. Today: unmeasured on real mistakes (3 clips).
 
 Every stage below either moves one of these or makes measuring them trustworthy.
+
+### A2b. Three cautions about the numbers we already have
+Found by reading the base model's paper (`reading_notes.md`, section 1):
+1. Two of the three held-out reciters (13.0 and 19.0) have recitations in the collection
+   the base model was trained on. Only reciter 5.0 looks unseen. The 0.43% token error is
+   therefore probably flattering. Always report per reciter.
+2. Every ayah's text is in the training data, read by other reciters. A model can learn to
+   recall the familiar ayah instead of listening. The planted-mistake test changes the
+   expected text and leaves the audio correct, so it cannot detect this.
+3. So the first new work is a test with mistakes in the audio itself (stage 2, step 2.6),
+   before any further training. If the model recalls instead of listening, more training
+   of the same kind will make it worse, not better.
 
 ### A3. Working rules
 - One branch per step, one pull request per branch, the user merges. Never push to main.
@@ -51,6 +66,12 @@ Fix these names and never train on them:
 - `phone-heldout`: to build in stage 4, phone clips set aside before any phone training.
 - `friend-correct`: the long correct recitation, once cut (stage 3).
 - `mistakes-real`: labelled clips with word-located mistakes (grows from stage 6).
+- `spliced-audio`: correct recitation with one word removed, repeated or swapped in the
+  audio (build in step 2.6). The check for "listening or recalling".
+- `non-quran`: a few hours of other Arabic speech with diacritised text (step 2.6.5).
+
+Of the studio sets, treat reciter 5.0 as the clean one; 13.0 and 19.0 were probably heard
+by the base model.
 
 --------------------------------------------------------------------------------
 
@@ -122,6 +143,34 @@ marks are stored by display-word index.
 - 2.4.1 Add to the report: share of correct ayahs with at least one flag.
 - 2.4.2 This is the number a user feels. Report it beside the per-word rate every time.
 
+### Step 2.6 Does the model listen, or recall?  (do this before stage 5)
+The most important new check. All on held-out reciters, reported per reciter.
+- 2.6.1 Get word timings: force-align each clip's expected tokens and take the first and
+  last frame of every word (25 frames per second).
+- 2.6.2 Build `spliced-audio` from correct clips, cutting at word boundaries with a
+  10-millisecond cross-fade:
+  - deletion: remove one word from the audio;
+  - repetition: play one word twice;
+  - swap: replace one word with a different word of similar length from the same reciter.
+  Keep the original expected text. Listen to 30 results; discard any kind whose joins are
+  obvious, since the model would learn the join, not the mistake.
+- 2.6.3 Measure two things on each kind:
+  - Does the free decode follow the audio? For a deletion, the removed word's sounds should
+    be absent from the model's output. Count how often they appear anyway. That is the
+    recall rate: the model writing what it expects instead of what it hears.
+  - Does the checker flag the changed word, at the usual false-flag settings?
+- 2.6.4 Read the result:
+  - recall rate near zero: the model listens; continue as planned;
+  - recall rate clearly above zero: the model leans on memorised text. Then stage 5 must
+    include spliced clips and non-Quran speech as training data, and this test is the
+    gate for every later model.
+- 2.6.5 A second probe, cheap: decode 200 clips of ordinary Arabic speech with diacritised
+  text (convert the text to sound tokens with the same converter where it applies). If
+  token error there is far worse than on unseen-reciter Quran audio, that gap is another
+  measure of reliance on memorised text.
+- 2.6.6 Check: a table in `docs/results.md`: kind of splice, clips, recall rate, catch rate,
+  per reciter.
+
 ### Step 2.5 Automatic tests
 - 2.5.1 `tests/` with fast checks: token folding and unfolding, word map, metrics
   (`mdd.py`), mistake generator (output differs from input in exactly one place),
@@ -188,6 +237,11 @@ in a new voice. This is the best material for setting thresholds.
   file, scores it, deletes it. Scores so far are in `data/phone_scores/`.
 - 4.2.2 Each row has the full mismatch and the words-and-vowels mismatch (`err_basic`).
   Re-score file 0, which predates `err_basic`.
+- 4.2.2b Add two model-free checks to `phone_filter.py`, as the base model's authors did:
+  sounds per second and seconds per expected token. Drop clips outside a sensible band
+  (set the band from the expert set's distribution). This removes most cut-off and
+  over-long clips before the model is even run; half of the first labelling batch was
+  that kind of clip.
 - 4.2.3 Estimated cost: about 10 minutes per file on a laptop CPU if the machine is
   otherwise idle; measure the first file and plan from that.
 
@@ -223,6 +277,10 @@ in a new voice. This is the best material for setting thresholds.
   and evaluate the averaged copy. Save both.
 - 5.1.6 Augmentation for expert clips only: band-limit, mild clipping, room echo, added
   noise. Phone clips are already real.
+- 5.1.6b If step 2.6 showed recall: add spliced clips with their true (changed) token
+  sequence as targets, about 10% of each batch, and non-Quran Arabic speech at about 10%.
+  Purpose: make the text unpredictable so the model has to listen. If step 2.6 showed no
+  recall, still add a 5% non-Quran share and compare with a run without it.
 - 5.1.7 Exclude reciter 25.0 (flagged by its own authors as badly cut).
 - 5.1.8 Validation on three sets every 1,000 steps: `studio-val`, a slice of correct phone
   clips, and `friend-correct` threshold half.
@@ -240,6 +298,7 @@ in a new voice. This is the best material for setting thresholds.
 
 ### Step 5.4 Judge it
 - 5.4.1 Run the full evaluation on every test set of A5 that exists.
+- 5.4.1b Run step 2.6 again on the new model. The recall rate must not rise.
 - 5.4.2 Pass if: studio numbers are no worse than before by more than a small margin;
   false flags on `phone-labelled-v1` correct clips fall sharply; `friend-correct` test
   half improves.
@@ -293,10 +352,10 @@ Purpose: real mistakes located at the word are the scarcest thing in the project
 - 7.1.1 Already used for evaluation. For training the checker (stage 8), not the model.
 
 ### Step 7.2 Spliced audio
-- 7.2.1 From word timings of the same reciter, replace one word with a different word of
-  similar length, or remove a word, or repeat one.
-- 7.2.2 Cross-fade 10 milliseconds at the joins. Label the said-token row accordingly.
-- 7.2.3 Listen to 30 before using any: discard the method if the joins are obvious.
+- 7.2.1 The splicing tool is built in step 2.6 for testing. Here it is used for training,
+  on training reciters only, never on the held-out ones.
+- 7.2.2 Label the said-token row with what the spliced audio actually contains.
+- 7.2.3 Keep the spliced test clips of step 2.6 out of training entirely.
 
 ### Step 7.3 Train in order
 - 7.3.1 First generated material, at a low rate, mixed with normal clips.
@@ -410,14 +469,15 @@ neighbouring words; signal level; position in the ayah.
 ## B. Order and dependencies
 
     1 Foundation
-    └─ 2 Measurement ──────────────┐
+    └─ 2 Measurement (2.6 "listen or recall" gates stage 5) ─┐
        ├─ 3 Long recitation ───────┤
        └─ 4 Phone data ── 5 Phone fine-tune ── 7 Mistake training ── 8 Verifier
                     6 Labelling (runs alongside everything from stage 2 on)
                                          8 Verifier ── 9 Live ── 10 Phone ── 11 App
                                                                   12 Tajweed, 13 Release
 
-Stages 3 and 4 can run in parallel. Stage 6 never stops.
+Stages 3 and 4 can run in parallel. Stage 6 never stops. Do step 2.6 before spending any
+GPU time in stage 5: its answer decides what stage 5 trains on.
 
 ## C. Budget (estimates)
 
@@ -442,6 +502,8 @@ Money spent so far: none.
 | Thresholds do not transfer between voices | Good on one reciter, bad on another | Thresholds from many voices; per-session adaptation later |
 | Model too slow on phones | Stage 10 measurements | Student model |
 | Licence surprise | New source added in a hurry | Check `data_licenses.md` before any download |
+| Model recalls the ayah instead of listening | Recall rate above zero in step 2.6; real mistakes missed while planted ones are caught | Spliced and non-Quran training data; recall rate as a gate |
+| Held-out reciters were heard by the base model | Reciter 5.0 scores clearly worse than 13.0 | Report per reciter; add voices from no public collection |
 | Test set leaks into training | Numbers jump | Fixed names (A5), splits decided at labelling time |
 | Recordings of private people exposed | Files outside `data/` | Keep `data/` ignored; never attach clips to pull requests |
 
