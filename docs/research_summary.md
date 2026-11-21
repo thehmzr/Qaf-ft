@@ -126,3 +126,33 @@ checker flagged the marked word in 2 of the 2 clips that had a word mark, among 
 Reading: on phone audio the model's mismatch score does not separate incomplete clips, correct
 recitation it mishears, and real mistakes (median mismatch 0.21 vs 0.22). The gap is phone audio,
 not the checker logic. Small sample; one labeller; no second pass yet.
+
+## Words-and-vowels mode on the hand-labelled phone clips
+Same 35 usable clips (32 correct, 3 with a mistake). Each mode gets its own thresholds, set on the
+two held-out test reciters (last shard of each, suras 78-114, 1,168 clips, 4,158 words): flag at
+1% false flags, strong at 0.1%. Full mode 2.08 / 4.91, words and vowels 0.70 / 4.91.
+Shares are of sound groups (words as the sound script splits them; 6 clips have fewer groups than
+display words).
+
+| Correct clips | Words | Full, flag | Full, strong | Words and vowels, flag | Words and vowels, strong |
+|---|---|---|---|---|---|
+| All 32 | 112 | 30% (22-40) | 17% (9-25) | 42% (32-52) | 18% (10-26) |
+| 25 from the unsure group | 89 | 38% (29-49) | 21% (12-32) | 53% (43-63) | 22% (13-33) |
+| 7 controls | 23 | 0% | 0% | 0% | 0% |
+
+95% intervals from resampling clips. Controls were picked because the model already decoded them
+almost perfectly, so their 0% says little. The earlier 51% (48 of 95) used another threshold set
+and display words; rerun here, full mode gives 38% on the same 25 clips.
+
+Mistake clips (F = flagged, S = strong):
+- 103:3, vowel changed in word 6: flagged in both modes (2.99). Words 3, 5 and 7, judged correct,
+  score higher and are strong in both.
+- 104:4, sound dropped in word 1: missed in full mode (1.07), flagged in words-and-vowels mode.
+  Word 3, judged correct, is strong in both.
+- 104:3, short ghunnah (word 1) and short madd (word 2), no word mark: full mode flags word 2;
+  words-and-vowels mode flags words 1 and 2 on other sounds. Words 0 and 3 are strong in both.
+
+Reading: dropping tajweed detail does not lower the flags. At 1% it flags more, because the
+threshold falls further on studio audio than the scores do on phone audio. Strong flags stay the
+same (21% vs 22%): the words that fail clearly fail on letters and vowels, not on lengths. The gap
+is acoustic, which points to the phone fine-tune. One labeller, small sample.
