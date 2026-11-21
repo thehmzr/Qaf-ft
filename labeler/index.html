@@ -70,6 +70,10 @@ audio{width:100%;margin-top:10px}
 .site{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:4px 6px 4px 10px;font-size:13px}
 .site b{font-family:var(--ar);font-size:20px;direction:rtl}
 .site.off{border-color:var(--crit);background:var(--critsoft)}
+.sounds{display:flex;gap:5px;flex-wrap:wrap;direction:rtl}
+.snd{font:22px var(--ar);min-width:38px;padding:0 8px;line-height:1.9;border-radius:8px}
+.snd.ch{background:var(--critsoft);border-color:var(--crit);color:var(--crit)}
+.snd.del{text-decoration:line-through;opacity:.6}
 .note{font-size:13px;color:var(--muted);margin:6px 0 0;max-width:68ch}
 /* sticky save bar */
 .bar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:10px 16px}
@@ -107,6 +111,8 @@ summary{cursor:pointer;font-weight:600}
     <p class="hint" id="hint">Tap a word that was recited wrongly.</p>
     <div class="tray" id="tray" hidden>
       <div class="row"><b id="trayWord"></b><span class="note" style="margin:0">What went wrong?</span><span style="flex:1"></span><button id="clearWord">Not a mistake</button></div>
+      <div class="row"><span class="note" style="margin:0">Its sounds (tap one to change what was said):</span></div>
+      <div class="sounds" id="traySounds"></div>
       <div class="chips" id="trayChips"></div>
       <div class="row"><label for="heard">What was said (optional)</label><input type="text" id="heard" style="direction:rtl;width:220px"></div>
     </div>
@@ -175,12 +181,25 @@ summary{cursor:pointer;font-weight:600}
       $("trayWord").textContent=ayah.words[sel];
       $("trayChips").innerHTML=meta.mistakes.map(function(m,k){return '<button class="chip'+(marks[sel]&&marks[sel].type===m?' on':'')+'" data-m="'+esc(m)+'"><kbd>'+(k+1)+'</kbd> '+esc(m)+'</button>'}).join("");
       $("heard").value=marks[sel]?marks[sel].heard||"":"";
+      var ed=(marks[sel]&&marks[sel].sounds)||{};
+      $("traySounds").innerHTML=(ayah.sounds[sel]||[]).map(function(x){var e=ed[x.pos];
+        var shown=e===undefined?x.t:(e.now===null?x.t:e.now);
+        return '<button class="snd'+(e!==undefined?' ch':'')+(e&&e.now===null?' del':'')+'" data-pos="'+x.pos+'" title="'+(x.alts.length?'Tap to change':'No common mistake for this sound; tap to mark it not said')+'">'+esc(shown)+'</button>'}).join("");
     }
     refresh();
   }
   function setMistake(m){if(sel===null)return;marks[sel]={type:m,heard:marks[sel]?marks[sel].heard:""};drawWords()}
   $("words").addEventListener("click",function(e){var b=e.target.closest(".word");if(!b)return;var i=+b.dataset.i;sel=sel===i?null:i;drawWords()});
   $("trayChips").addEventListener("click",function(e){var b=e.target.closest(".chip");if(b)setMistake(b.dataset.m)});
+  $("traySounds").addEventListener("click",function(e){var b=e.target.closest(".snd");if(!b||sel===null)return;
+    var pos=+b.dataset.pos,x=ayah.sounds[sel].filter(function(y){return y.pos===pos})[0];
+    // cycle: as written -> each common mistake -> not said -> as written
+    var seq=x.alts.filter(function(a){return a.now!==null}).concat([{now:null,kind:"skipped"}]);
+    var m=marks[sel]||{type:meta.mistakes[0],heard:""};m.sounds=m.sounds||{};
+    var cur=m.sounds[pos],k=cur===undefined?-1:seq.map(function(a){return a.now}).indexOf(cur.now);
+    if(k+1>=seq.length){delete m.sounds[pos]}else{m.sounds[pos]={now:seq[k+1].now,was:x.t};m.type=seq[k+1].kind}
+    if(!Object.keys(m.sounds).length&&!marks[sel]){drawWords();return}
+    marks[sel]=m;if(!Object.keys(m.sounds).length)delete m.sounds;drawWords()});
   $("clearWord").onclick=function(){if(sel!==null){delete marks[sel];sel=null;drawWords()}};
   $("heard").oninput=function(){if(sel!==null&&marks[sel])marks[sel].heard=this.value};
   function siteOptions(x){return x.kind==="madd"?["as expected","1 count","2 counts","3 counts","4 counts","5 counts","6 counts","longer than 6"]:["as expected","missing","too short","too long"]}
@@ -254,7 +273,8 @@ summary{cursor:pointer;font-weight:600}
   $("rec").onclick=toggleRec;
   async function save(){
     if(!(ayah&&wav))return;
-    var list=Object.keys(marks).map(Number).sort(function(a,b){return a-b}).map(function(i){return {word:i,text:ayah.words[i],type:marks[i].type,heard:marks[i].heard}});
+    var list=Object.keys(marks).map(Number).sort(function(a,b){return a-b}).map(function(i){var sn=marks[i].sounds||{};return {word:i,text:ayah.words[i],type:marks[i].type,heard:marks[i].heard,
+        sounds:Object.keys(sn).map(function(p){return {pos:+p,was:sn[p].was,now:sn[p].now}})}});
     var sites=ayah.sites.map(function(x,i){return {kind:x.kind,group:x.group,expected:x.counts||null,heard:siteVal[i]||"as expected"}});
     var label={sura:ayah.sura,aya:ayah.aya,words:ayah.words,reciter:$("reciter").value.trim(),clip_kind:kind,
       verdict:kind!=="usable"?"unusable":(list.length||offSites())?"mistake":"correct",marks:list,sites:sites};

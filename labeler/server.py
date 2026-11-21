@@ -12,7 +12,8 @@ from urllib.parse import parse_qs, urlparse
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
-from qafft.phonetic import ayah_sites, ayah_tokens, ayah_uthmani
+from qafft.mistakes import options
+from qafft.phonetic import ayah_sites, ayah_tokens, ayah_uthmani, default_moshaf, fold_with_groups
 from qafft import quran_text
 from qafft.tajweed_text import COLOURS, NAMES, ORDER, coloured_words
 
@@ -31,6 +32,22 @@ SURAS = ("Al-Fatihah Al-Baqarah Aal-Imran An-Nisa Al-Maidah Al-Anam Al-Araf Al-A
          "Al-Adiyat Al-Qariah At-Takathur Al-Asr Al-Humazah Al-Fil Quraysh Al-Maun Al-Kawthar Al-Kafirun An-Nasr "
          "Al-Masad Al-Ikhlas Al-Falaq An-Nas").split()
 MISTAKES = ["letter", "vowel mark", "madd length", "ghunnah", "qalqalah", "skipped", "added", "repeated", "other"]
+
+
+KIND_TO_MISTAKE = {"letter": "letter", "vowel": "vowel mark", "madd": "madd length", "doubling": "letter",
+                   "ghunnah": "ghunnah", "qalqalah": "qalqalah"}
+
+
+def word_sounds(s, a, n_words):
+    """The expected sound tokens of each word, each with the ways it is commonly said wrong."""
+    from quran_transcript import quran_phonetizer
+    ph = quran_phonetizer(ayah_uthmani(s, a), default_moshaf(), remove_spaces=False).phonemes
+    toks, grps = fold_with_groups(ph)
+    out = [[] for _ in range(n_words)]
+    for pos, (t, g) in enumerate(zip(toks, grps)):
+        alts = [dict(now=new, kind=KIND_TO_MISTAKE[k]) for k, new in options(t)]
+        out[min(g, n_words - 1)].append(dict(pos=pos, t=t, alts=alts))
+    return out, toks
 
 
 def load_labels():
@@ -84,8 +101,9 @@ class Handler(BaseHTTPRequestHandler):
         if u.path == "/ayah":
             s, a = int(q["s"][0]), int(q["a"][0])
             words = quran_text.words(s, a) or ayah_uthmani(s, a).split()
-            return self.send(200, dict(sura=s, aya=a, words=words, tokens=ayah_tokens(s, a), sites=ayah_sites(s, a),
-                                       coloured=coloured_words(words)))
+            sounds, toks = word_sounds(s, a, len(words))
+            return self.send(200, dict(sura=s, aya=a, words=words, tokens=toks, sites=ayah_sites(s, a),
+                                       coloured=coloured_words(words), sounds=sounds))
         if u.path == "/list":
             items = []
             for f in sorted(os.listdir(DATA)):
@@ -131,8 +149,11 @@ class Handler(BaseHTTPRequestHandler):
         if label.get("clip_kind", "usable") not in CLIP_KINDS:
             return self.send(400, dict(error="unknown clip kind"))
         rid = time.strftime("%Y%m%d-%H%M%S-") + uuid.uuid4().hex[:6]
-        label.update(id=rid, saved=time.strftime("%Y-%m-%dT%H:%M:%S"),
-                     expected_tokens=ayah_tokens(int(label["sura"]), int(label["aya"])))
+        _, expected = word_sounds(int(label["sura"]), int(label["aya"]), max(1, len(label.get("words", []))))
+        edits = {int(e["pos"]): e.get("now") for m in label.get("marks", []) for e in m.get("sounds", [])}
+        said = [edits.get(i, t) for i, t in enumerate(expected)]
+        label.update(id=rid, saved=time.strftime("%Y-%m-%dT%H:%M:%S"), expected_tokens=expected,
+                     said_tokens=[t for t in said if t] if edits else None)
         open(os.path.join(DATA, rid + ".wav"), "wb").write(wav)
         json.dump(label, open(os.path.join(DATA, rid + ".json"), "w"), ensure_ascii=False, indent=1)
         self.send(200, dict(id=rid))
