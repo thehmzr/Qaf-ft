@@ -11,7 +11,8 @@ search-snippet or third-party only. Two threads (datasets, training methods) sti
    => output unit must be phonemes, no language model.
 2. False flags are the unsolved problem. Best published phoneme system (IQRA 2026 winner)
    wrongly rejects 1.75% of correct phonemes => a false flag in about half of 40-phoneme
-   ayahs. Phoneme checkers flag 21-51 of 100 correct recitations on the Quran-Lab board
+   ayahs. (Source to confirm: the figure is not in arXiv 2506.07722, whose own baselines
+   reject 12.65-21% of correct phonemes; see notes/quran_recitation_sources.md.) Phoneme checkers flag 21-51 of 100 correct recitations on the Quran-Lab board
    (muaalem 50.5, TajweedFormer V4 21.0, Tarteel whisper-base 40.3).
 3. Real mistake data matters most: IQRA 2026 winner F1 0.46 (synthetic only) -> 0.68 after a
    second stage on ~1.5 h of real mispronounced speech -> 0.72 with ensemble.
@@ -53,7 +54,7 @@ search-snippet or third-party only. Two threads (datasets, training methods) sti
 - HF Jobs: T4 $0.40/h, L4 $0.80/h, A100 $2.50/h. Kaggle ~30 free GPU-h/week.
 
 Targets to claim "best": phoneme false-reject <= 0.3% on correct recitation (published best
-1.75%), recall >= 50% on real errors, WER <= 0.6 studio / <= 2 phone, int8 size <= 75 MB.
+1.75%, source to confirm), recall >= 50% on real errors, WER <= 0.6 studio / <= 2 phone, int8 size <= 75 MB.
 
 ## Datasets (fifth thread, condensed)
 Train: obadx/muaalem-annotated-v3 (848 h, 22 male experts, phoneme+sifat labels, MIT tag);
