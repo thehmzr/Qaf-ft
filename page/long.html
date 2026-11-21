@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Long recitation</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--paper:#f2f5f4;--surface:#fff;--ink:#13201f;--muted:#5a6866;--line:#d6dedc;--accent:#0b6e6a;--accent-soft:#d9eeec;--warn:#9a5a00;--warn-soft:#fbecd3;--crit:#b3261e;--crit-soft:#f8dcd9;--now:#fff3b0}
+@media (prefers-color-scheme: dark){:root{--paper:#0f1716;--surface:#172221;--ink:#e6efed;--muted:#93a3a0;--line:#2a3937;--accent:#4fc4bd;--accent-soft:#17403d;--warn:#e0a44a;--warn-soft:#3d2d12;--crit:#f0796f;--crit-soft:#47201d;--now:#4a4316;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font:15px/1.45 "IBM Plex Sans",system-ui,sans-serif}
+main{max-width:860px;margin:0 auto;padding:24px 16px 120px;display:flex;flex-direction:column;gap:14px}
+nav{display:flex;gap:14px;font-size:14px} nav a{color:var(--accent)}
+h1{margin:0;font-size:24px}
+.lede{color:var(--muted);margin:0;max-width:65ch;font-size:14px}
+.bar{position:sticky;top:0;z-index:2;background:var(--paper);padding:10px 0;display:flex;gap:8px;flex-wrap:wrap;align-items:center;border-bottom:1px solid var(--line)}
+button,select{font:inherit;font-size:14px;padding:6px 12px;border-radius:7px;border:1px solid var(--accent);background:var(--surface);color:var(--accent);cursor:pointer}
+button:hover{background:var(--accent-soft)} button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.status{font-size:13px;color:var(--muted);margin-left:auto}
+.legend{font-size:13px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
+.legend span{padding:0 6px;border-radius:4px}
+.ayah{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.ayah.playing{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.head{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--muted)}
+.head b{color:var(--ink);font-size:14px}
+.text{direction:rtl;font-family:"Amiri Quran",serif;font-size:26px;line-height:2.1;word-spacing:4px}
+.w{border-radius:5px;padding:0 2px}
+.w.miss{color:var(--muted);opacity:.55}
+.w.flag{background:var(--warn-soft);box-shadow:inset 0 -2px 0 var(--warn)}
+.w.strong{background:var(--crit-soft);box-shadow:inset 0 -2px 0 var(--crit)}
+.w.now{background:var(--now)}
+.w[data-t]{cursor:pointer}
+.err{color:var(--crit)}
+</style>
+</head>
+<body>
+<main>
+  <nav><a href="index.html">Progress</a><a href="system.html">System</a><a href="long.html">Long recitation</a></nav>
+  <h1 id="title">Long recitation, ayah by ayah</h1>
+  <p class="lede">Each ayah is cut from the long recitation by the word times the model found. Click a word to play from it. Coloured words are the ones the checker would flag (thresholds set on the first half of this recitation); grey words could not be matched in the audio.</p>
+  <div class="legend"><span class="w flag">flag (1% level)</span><span class="w strong">strong (0.1% level)</span><span class="w miss">not matched</span></div>
+  <div class="bar">
+    <button id="prev" aria-label="Previous ayah">Prev</button>
+    <button id="play">Play</button>
+    <button id="next" aria-label="Next ayah">Next</button>
+    <label><input type="checkbox" id="auto" checked> play on</label>
+    <select id="mode" aria-label="Scoring mode"><option value="basic">words and vowels</option><option value="full">tajweed judged</option></select>
+    <select id="flagsOnly" aria-label="Filter"><option value="all">all ayahs</option><option value="flagged">ayahs with a flag</option></select>
+    <span class="status" id="status">Loading…</span>
+  </div>
+  <div id="list"></div>
+</main>
+<audio id="audio" preload="auto"></audio>
+<script>
+(function(){
+  var params=new URLSearchParams(location.search), set=params.get("set")||"baqarah_v2";
+  var base="/long/"+encodeURIComponent(set)+"/ayahs/";
+  var data=null, cur=-1, audio=document.getElementById("audio");
+  function $(id){return document.getElementById(id)}
+  function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+  function pad(n){return ("00"+n).slice(-3)}
+  function thr(){var m=$("mode").value, t=data.thresholds["own-half/"+m]||{};return {m:m,flag:t.flag,strong:t.strong}}
+  function cls(w,t){if(w.start==null)return "miss";var v=w[t.m];if(v==null||t.flag==null)return "";return v>t.strong?"strong":v>t.flag?"flag":""}
+  function visible(){var t=thr();return data.ayahs.map(function(a,i){return i}).filter(function(i){return $("flagsOnly").value==="all"||data.ayahs[i].words.some(function(w){var c=cls(w,t);return c==="flag"||c==="strong"})})}
+  function render(){
+    var t=thr(), h="";
+    visible().forEach(function(i){var a=data.ayahs[i];
+      var nf=a.words.filter(function(w){var c=cls(w,t);return c==="flag"||c==="strong"}).length;
+      h+='<section class="ayah" id="a'+i+'"><div class="head"><b>'+(a.ayah===0?"Opening":"Ayah "+a.ayah)+'</b><span>'+(a.end-a.start).toFixed(1)+' s</span>'+(nf?'<span>'+nf+' flagged</span>':'')+(a.missing?'<span>'+a.missing+' word'+(a.missing>1?'s':'')+' not matched</span>':'')+'<button data-play="'+i+'" style="margin-left:auto">Play</button></div><div class="text">'+
+        a.words.map(function(w,k){var c=cls(w,t);return '<span class="w '+c+'" data-i="'+i+'" data-k="'+k+'"'+(w.start!=null?' data-t="'+w.start+'"':'')+' title="'+(w[t.m]!=null?'score '+w[t.m]:'no score')+'">'+esc(w.text)+'</span>'}).join(" ")+'</div></section>'});
+    $("list").innerHTML=h||'<p class="lede">No ayah matches this filter.</p>';
+    $("status").textContent=data.ayahs.length+" ayahs · "+(data.ayahs.reduce(function(s,a){return s+a.end-a.start},0)/60).toFixed(0)+" min";
+  }
+  function play(i,from){
+    if(i<0||i>=data.ayahs.length)return;
+    document.querySelectorAll(".ayah.playing").forEach(function(e){e.classList.remove("playing")});
+    cur=i; var el=$("a"+i); if(el){el.classList.add("playing");el.scrollIntoView({block:"nearest",behavior:"smooth"})}
+    audio.src=base+pad(data.ayahs[i].ayah)+".wav";
+    audio.onloadedmetadata=function(){if(from)audio.currentTime=from;audio.play()};
+    $("play").textContent="Pause";
+  }
+  function step(d){var v=visible(), p=v.indexOf(cur); var n=p<0?v[0]:v[p+d]; if(n!=null)play(n)}
+  audio.addEventListener("timeupdate",function(){
+    if(cur<0)return; var t=audio.currentTime;
+    document.querySelectorAll('#a'+cur+' .w').forEach(function(e){var w=data.ayahs[cur].words[+e.dataset.k];e.classList.toggle("now",w.start!=null&&t>=w.start&&t<w.end)});
+  });
+  audio.addEventListener("ended",function(){document.querySelectorAll(".w.now").forEach(function(e){e.classList.remove("now")});$("play").textContent="Play";if($("auto").checked)step(1)});
+  audio.addEventListener("error",function(){$("status").innerHTML='<span class="err">Could not load the audio for this ayah.</span>'});
+  document.addEventListener("click",function(e){
+    var b=e.target.closest("[data-play]"); if(b){play(+b.dataset.play);return}
+    var w=e.target.closest(".w[data-t]"); if(w){var i=+w.dataset.i; if(i===cur&&audio.src){audio.currentTime=+w.dataset.t;audio.play()}else play(i,+w.dataset.t)}
+  });
+  $("play").onclick=function(){if(cur<0){step(1);return} if(audio.paused){audio.play();this.textContent="Pause"}else{audio.pause();this.textContent="Play"}};
+  $("prev").onclick=function(){step(-1)}; $("next").onclick=function(){step(1)};
+  $("mode").onchange=render; $("flagsOnly").onchange=render;
+  document.addEventListener("keydown",function(e){if(e.target.tagName==="SELECT"||e.target.tagName==="INPUT")return;if(e.key===" "){e.preventDefault();$("play").click()}else if(e.key==="ArrowRight")step(-1);else if(e.key==="ArrowLeft")step(1)});
+  fetch(base+"ayahs.json",{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(d){data=d;render()})
+    .catch(function(){$("status").innerHTML='<span class="err">No ayah clips found for "'+esc(set)+'". Run data_tools/ayah_clips.py first.</span>'});
+})();
+</script>
+</body>
+</html>

@@ -2,6 +2,7 @@
 
   python tools/serve_pages.py [--port 8777]
 
+/long/NAME/ayahs/... serves the ayah clips made by data_tools/ayah_clips.py (page long.html).
 /state.json is built on each request from data/page_state.json, with live progress
 for jobs that have a "live" entry (lines counted in result files). The time left is worked
 out from the rate over the last half hour of page refreshes.
@@ -11,6 +12,7 @@ import argparse, collections, glob, http.server, json, os, time
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PAGES = os.path.join(ROOT, "page")
 STATE = os.path.join(ROOT, "data", "page_state.json")
+LONG = os.path.realpath(os.path.join(ROOT, "data", "long"))
 HISTORY = collections.defaultdict(collections.deque)    # job id -> recent (time, done), for the rate
 
 
@@ -62,7 +64,20 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if host not in ("127.0.0.1", "localhost"):
             self.send_error(403)
             return
-        if self.path.split("?")[0] == "/state.json":
+        path = self.path.split("?")[0]
+        if path.startswith("/long/"):              # ayah clips of a long recitation (local data)
+            f = os.path.realpath(os.path.join(LONG, path[len("/long/"):]))
+            if not f.startswith(LONG + os.sep) or not f.endswith((".wav", ".json")) or not os.path.isfile(f):
+                self.send_error(404); return
+            data = open(f, "rb").read()
+            self.send_response(200)
+            self.send_header("Content-Type", "audio/wav" if f.endswith(".wav") else "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Cache-Control", "no-store")
+            self.end_headers()
+            self.wfile.write(data)
+            return
+        if path == "/state.json":
             try:
                 body = json.dumps(state(), ensure_ascii=False).encode()
                 code = 200
