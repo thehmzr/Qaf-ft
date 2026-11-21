@@ -1,6 +1,6 @@
 """Scores phone recordings against the ayah their file name claims.
 
-  python data_tools/phone_filter.py --ckpt best.pt --shards data/tlog/data/clean-00000.parquet [...]
+  python data_tools/phone_filter.py --ckpt best.pt --shards data/phone_src/data/clean-00000.parquet [...]
 
 For every clip: decode freely, compare with the expected sound tokens of that ayah.
 Writes data/phone_scores/<shard>.jsonl with the token error and length ratio, so a

@@ -13,7 +13,7 @@ done_already() {
   [ -f "$s.done" ] || { [ -s "$s" ] && [ "$(wc -l < "$s")" -ge 4990 ]; }
 }
 fetch() {
-  $PY -c "from huggingface_hub import hf_hub_download; hf_hub_download('deepdml/tlog-clean-sf16k','$(name "$1")',repo_type='dataset',local_dir='data/tlog')" >/dev/null 2>&1
+  $PY -c "import sys; sys.path.insert(0, '.'); from qafft.sources import hub_id; from huggingface_hub import hf_hub_download; hf_hub_download(hub_id('phone'),'$(name "$1")',repo_type='dataset',local_dir='data/phone_src')" >/dev/null 2>&1
 }
 
 todo=()
@@ -25,7 +25,7 @@ for k in "${!todo[@]}"; do
   i=${todo[$k]}; next=${todo[$((k + 1))]:-}
   pid=""
   if [ -n "$next" ]; then fetch "$next" & pid=$!; fi
-  f="data/tlog/$(name "$i")"
+  f="data/phone_src/$(name "$i")"
   if [ -s "$f" ]; then
     $PY data_tools/phone_filter.py --ckpt "$CKPT" ${BASE:+--base "$BASE"} --shards "$f" 2>&1 | grep -E "progress|finished|Error|Traceback"
     if [ "${PIPESTATUS[0]}" -eq 0 ] && done_already "$i"; then

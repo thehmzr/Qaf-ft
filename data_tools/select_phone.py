@@ -54,11 +54,11 @@ else:
 heldout, val_files = set(split["heldout"]), set(split["val"])
 
 drop = set()
-hold = P("data/tlog_holdout_ids.json")
+hold = P("data/phone_holdout_ids.json")
 if os.path.exists(hold):
     drop |= set(json.load(open(hold)))
 else:
-    raise SystemExit(f"missing {hold}: build it from the benchmark's tlog_holdout metadata first")
+    raise SystemExit(f"missing {hold}: build it from bench_a's phone holdout list first")
 drop |= {os.path.splitext(os.path.basename(p))[0] for p in glob.glob(P("data/queue/*.wav"))}
 
 why = collections.Counter()

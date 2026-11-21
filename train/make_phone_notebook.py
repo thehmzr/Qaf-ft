@@ -6,7 +6,7 @@ Needs data/phone_train.json and data/phone_tokens.json from data_tools/select_ph
 The clip list goes inside the notebook, so the output is written under data/ and kept out of git.
 On Kaggle: Accelerator GPU, Internet on, and add the output of the qaf-full-run notebook as input.
 """
-import argparse, json, os
+import argparse, json, os, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 read = lambda p: open(os.path.join(ROOT, p), encoding="utf-8").read()
@@ -36,6 +36,9 @@ def md(src):
 
 
 W = "/kaggle/working/qaf"
+sys.path.insert(0, ROOT)
+from qafft.sources import hub_id
+SOURCES = {"datasets": {k: hub_id(k) for k in ("expert", "phone", "base")}}
 sel = json.load(open(a.select))
 n_train = sum(map(len, sel["train"].values()))
 n_val = sum(map(len, sel.get("val", {}).values()))
@@ -65,6 +68,8 @@ cells = [
     code(f"import os\nfor d in ('qafft', 'train'): os.makedirs('{W}/' + d, exist_ok=True)\n"
          f"open('{W}/qafft/__init__.py', 'w').close()"),
     code(f"%%writefile {W}/qafft/phonetic.py\n" + read("qafft/phonetic.py")),
+    code(f"%%writefile {W}/qafft/sources.py\n" + read("qafft/sources.py")),
+    code(f"import os, json\nos.makedirs('{W}/data', exist_ok=True)\njson.dump(" + repr(SOURCES) + f", open('{W}/data/sources.json', 'w'))"),
     code(f"%%writefile {W}/qafft/vocab.json\n" + read("qafft/vocab.json")),
     code(f"%%writefile {W}/train/pilot.py\n" + read("train/pilot.py")),
     code(f"%%writefile {W}/train/full.py\n" + read("train/full.py")),

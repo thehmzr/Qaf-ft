@@ -20,7 +20,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 from qafft.phonetic import fold
 
-BASE = "nvidia/stt_ar_fastconformer_hybrid_large_pcd_v1.0"
+from qafft.sources import hub_id
+
+BASE = hub_id("base")
 TEST_MOSHAF = {"5.0", "13.0"}      # never trained on
 VAL_MOSHAF = {"19.0"}
 FIRST_SURA = 78

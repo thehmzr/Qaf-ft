@@ -12,24 +12,25 @@ A run resumes from --out/last.pt if it exists.
 import argparse, collections, copy, io, json, math, os, random, sys, threading, queue, time
 
 import pyarrow.parquet as pq
-import requests
 import soundfile as sf
 import torch
 import torch.nn as nn
 import torchaudio
-from huggingface_hub import hf_hub_download
+from huggingface_hub import HfApi, hf_hub_download
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT); sys.path.insert(0, os.path.join(ROOT, "train"))
 from pilot import Segments, collate, augment, QafModel, evaluate, TEST_MOSHAF, VAL_MOSHAF
 
-REPO = "obadx/muaalem-annotated-v3"
-PHONE_REPO = "deepdml/tlog-clean-sf16k"
+from qafft.sources import hub_id
+
+REPO = hub_id("expert")
+PHONE_REPO = hub_id("phone")
 EXCLUDE_MOSHAF = {"25.0"}      # badly cut, left out on its authors' advice
 
 
 def shard_lists():
-    files = [s["rfilename"] for s in requests.get(f"https://huggingface.co/api/datasets/{REPO}").json()["siblings"]]
+    files = HfApi().list_repo_files(REPO, repo_type="dataset")
     by = collections.defaultdict(list)
     for f in files:
         if f.startswith("moshaf_") and f.endswith(".parquet") and "metadata" not in f:

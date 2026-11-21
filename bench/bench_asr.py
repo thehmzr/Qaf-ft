@@ -1,9 +1,9 @@
 """Transcribe a test set with an existing model and save predictions (resumable).
 
-  python bench/bench_asr.py --model whisper|nemo --set retasy|everyayah [--limit N]
+  python bench/bench_asr.py --model whisper|nemo --set learner_a|studio_b [--limit N]
 
-retasy    : the 905 learner clips labelled correct / in_correct (real phone audio)
-everyayah : professional reciters (one shard of the public test split)
+learner_a    : the 905 learner clips labelled correct / in_correct (real phone audio)
+studio_b : professional reciters (one shard of the public test split)
 Output: bench/out/<model>_<set>.jsonl with one {id, label, ref, hyp, dur} per clip.
 """
 import argparse, glob, io, json, os, sys, time
@@ -27,9 +27,9 @@ def load_audio(b):
 
 
 def items(name, limit):
-    if name == "retasy":
+    if name == "learner_a":
         n = 0
-        for f in sorted(glob.glob(f"{ROOT}/data/retasy/data/*.parquet")):
+        for f in sorted(glob.glob(f"{ROOT}/data/learner_a/data/*.parquet")):
             pf = pq.ParquetFile(f)
             for rg in range(pf.num_row_groups):
                 t = pf.read_row_group(rg, columns=["audio", "Aya", "final_label", "reciter_id", "Surah"]).to_pylist()
@@ -42,7 +42,7 @@ def items(name, limit):
                     if limit and n >= limit:
                         return
     else:
-        f = glob.glob(f"{ROOT}/data/everyayah_test/data/*.parquet")[0]
+        f = glob.glob(f"{ROOT}/data/studio_b_test/data/*.parquet")[0]
         pf = pq.ParquetFile(f)
         n = 0
         for rg in range(pf.num_row_groups):
@@ -67,13 +67,13 @@ def main():
     done = set()
     if os.path.exists(out):
         done = {json.loads(l)["id"] for l in open(out)}
-    total = a.limit or (905 if a.set == "retasy" else 1700)
+    total = a.limit or (905 if a.set == "learner_a" else 1700)
 
     import torch
     torch.set_num_threads(4)
     if a.model == "whisper":
         from transformers import WhisperForConditionalGeneration, WhisperProcessor
-        p = f"{ROOT}/models/tarteel-whisper-base"
+        p = f"{ROOT}/models/model_d"
         proc = WhisperProcessor.from_pretrained(p)
         model = WhisperForConditionalGeneration.from_pretrained(p).eval()
 
@@ -85,7 +85,7 @@ def main():
     else:
         import nemo.collections.asr as nemo_asr
         model = nemo_asr.models.ASRModel.restore_from(
-            f"{ROOT}/models/nvidia-fc-pcd/stt_ar_fastconformer_hybrid_large_pcd_v1.0.nemo", map_location="cpu").eval()
+            f"{ROOT}/models/base/base.nemo", map_location="cpu").eval()
         if a.model == "nemo_ctc":
             model.change_decoding_strategy(decoder_type="ctc")
 
