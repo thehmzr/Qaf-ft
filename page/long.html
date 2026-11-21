@@ -38,15 +38,15 @@ button:hover{background:var(--accent-soft)} button:focus-visible{outline:2px sol
 <main>
   <nav><a href="index.html">Progress</a><a href="system.html">System</a><a href="long.html">Long recitation</a></nav>
   <h1 id="title">Long recitation, ayah by ayah</h1>
-  <p class="lede">Each ayah is cut from the long recitation by the word times the model found. Click a word to play from it. Coloured words are the ones the checker would flag (thresholds set on the first half of this recitation); grey words could not be matched in the audio.</p>
-  <div class="legend"><span class="w flag">flag (1% level)</span><span class="w strong">strong (0.1% level)</span><span class="w miss">not matched</span></div>
+  <p class="lede">A long recitation, checked by ear and free of mistakes in words, vowels and tajweed, cut into ayahs by the word times the model found. Click a word to play from it. So every coloured word is a false flag: a place where the checker is wrong (thresholds set on the first half of this recitation). Grey words could not be matched in the audio.</p>
+  <div class="legend"><span class="w flag">false flag at the 1% level</span><span class="w strong">false flag at the 0.1% level</span><span class="w miss">not matched</span></div>
   <div class="bar">
     <button id="prev" aria-label="Previous ayah">Prev</button>
     <button id="play">Play</button>
     <button id="next" aria-label="Next ayah">Next</button>
     <label><input type="checkbox" id="auto" checked> play on</label>
     <select id="mode" aria-label="Scoring mode"><option value="basic">words and vowels</option><option value="full">tajweed judged</option></select>
-    <select id="flagsOnly" aria-label="Filter"><option value="all">all ayahs</option><option value="flagged">ayahs with a flag</option></select>
+    <select id="flagsOnly" aria-label="Filter"><option value="all">all ayahs</option><option value="flagged">ayahs with a false flag</option></select>
     <span class="status" id="status">Loading…</span>
   </div>
   <div id="list"></div>
@@ -54,12 +54,14 @@ button:hover{background:var(--accent-soft)} button:focus-visible{outline:2px sol
 <audio id="audio" preload="auto"></audio>
 <script>
 (function(){
-  var params=new URLSearchParams(location.search), set=params.get("set")||"baqarah_v2";
+  var params=new URLSearchParams(location.search), set=params.get("set")||"fatihah_baqarah";
   var base="/long/"+encodeURIComponent(set)+"/ayahs/";
   var data=null, cur=-1, audio=document.getElementById("audio");
   function $(id){return document.getElementById(id)}
   function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
   function pad(n){return ("00"+n).slice(-3)}
+  var NAMES={1:"Al-Fatihah",2:"Al-Baqarah",3:"Al Imran"};
+  function label(a){var n=NAMES[a.sura]||("Sura "+a.sura);return a.ayah===0?n+" · basmala":n+" "+a.ayah}
   function thr(){var m=$("mode").value, t=data.thresholds["own-half/"+m]||{};return {m:m,flag:t.flag,strong:t.strong}}
   function cls(w,t){if(w.start==null)return "miss";var v=w[t.m];if(v==null||t.flag==null)return "";return v>t.strong?"strong":v>t.flag?"flag":""}
   function visible(){var t=thr();return data.ayahs.map(function(a,i){return i}).filter(function(i){return $("flagsOnly").value==="all"||data.ayahs[i].words.some(function(w){var c=cls(w,t);return c==="flag"||c==="strong"})})}
@@ -67,7 +69,7 @@ button:hover{background:var(--accent-soft)} button:focus-visible{outline:2px sol
     var t=thr(), h="";
     visible().forEach(function(i){var a=data.ayahs[i];
       var nf=a.words.filter(function(w){var c=cls(w,t);return c==="flag"||c==="strong"}).length;
-      h+='<section class="ayah" id="a'+i+'"><div class="head"><b>'+(a.ayah===0?"Opening":"Ayah "+a.ayah)+'</b><span>'+(a.end-a.start).toFixed(1)+' s</span>'+(nf?'<span>'+nf+' flagged</span>':'')+(a.missing?'<span>'+a.missing+' word'+(a.missing>1?'s':'')+' not matched</span>':'')+'<button data-play="'+i+'" style="margin-left:auto">Play</button></div><div class="text">'+
+      h+='<section class="ayah" id="a'+i+'"><div class="head"><b>'+esc(label(a))+'</b><span>'+(a.end-a.start).toFixed(1)+' s</span>'+(nf?'<span>'+nf+' flagged</span>':'')+(a.missing?'<span>'+a.missing+' word'+(a.missing>1?'s':'')+' not matched</span>':'')+'<button data-play="'+i+'" style="margin-left:auto">Play</button></div><div class="text">'+
         a.words.map(function(w,k){var c=cls(w,t);return '<span class="w '+c+'" data-i="'+i+'" data-k="'+k+'"'+(w.start!=null?' data-t="'+w.start+'"':'')+' title="'+(w[t.m]!=null?'score '+w[t.m]:'no score')+'">'+esc(w.text)+'</span>'}).join(" ")+'</div></section>'});
     $("list").innerHTML=h||'<p class="lede">No ayah matches this filter.</p>';
     $("status").textContent=data.ayahs.length+" ayahs · "+(data.ayahs.reduce(function(s,a){return s+a.end-a.start},0)/60).toFixed(0)+" min";
@@ -76,7 +78,7 @@ button:hover{background:var(--accent-soft)} button:focus-visible{outline:2px sol
     if(i<0||i>=data.ayahs.length)return;
     document.querySelectorAll(".ayah.playing").forEach(function(e){e.classList.remove("playing")});
     cur=i; var el=$("a"+i); if(el){el.classList.add("playing");el.scrollIntoView({block:"nearest",behavior:"smooth"})}
-    audio.src=base+pad(data.ayahs[i].ayah)+".wav";
+    audio.src=base+pad(data.ayahs[i].sura)+"_"+pad(data.ayahs[i].ayah)+".wav";
     audio.onloadedmetadata=function(){if(from)audio.currentTime=from;audio.play()};
     $("play").textContent="Pause";
   }

@@ -31,26 +31,33 @@ from qafft.wordmap import group_words, map_tokens
 from cut_recitation import sura_stream
 
 
-def ayah_text(sura, ayah):
-    return ayah_uthmani(1, 1) if ayah == 0 else ayah_uthmani(sura, ayah)
+# an ayah is keyed sura*1000+ayah; key s*1000 is the basmala said before sura s
+def split_key(key):
+    return divmod(key, 1000)
+
+
+def ayah_text(key):
+    s, a = split_key(key)
+    return ayah_uthmani(1, 1) if a == 0 else ayah_uthmani(s, a)
 
 
 @lru_cache(maxsize=None)
-def ayah_words(sura, ayah):
-    return tuple(ayah_text(sura, ayah).split())
+def ayah_words(key):
+    return tuple(ayah_text(key).split())
 
 
 @lru_cache(maxsize=None)
-def group_to_words(sura, ayah):
-    s, a = (1, 1) if ayah == 0 else (sura, ayah)
-    return group_words(s, a, words=ayah_words(sura, ayah))
+def group_to_words(key):
+    s, a = split_key(key)
+    s, a = (1, 1) if a == 0 else (s, a)
+    return group_words(s, a, words=ayah_words(key))
 
 
 @lru_cache(maxsize=None)
-def portion(sura, ayah, w0, w1):
+def portion(key, w0, w1):
     """Tokens of printed words w0..w1 of one ayah, said on their own (pause rules at both
     ends), and the printed word (within the ayah) of each token."""
-    words = ayah_words(sura, ayah)
+    words = ayah_words(key)
     if not 0 <= w0 <= w1 < len(words):
         return None
     part = list(words[w0:w1 + 1])
@@ -89,18 +96,18 @@ def main():
     meta = json.load(open(os.path.join(a.dir, "pieces.json")))
     tokens = meta.get("tokens") or json.load(open(os.path.join(ROOT, "qafft", "vocab.json")))["tokens"]
     vocab = {t: i for i, t in enumerate(tokens)}; blank = len(tokens)
-    ref_toks, ref_words = sura_stream(meta["sura"])
+    ref_toks, ref_words = sura_stream(meta.get("suras") or meta["sura"])
     first_at, last_at = {}, {}
     for i, w in enumerate(ref_words):
         first_at.setdefault(w, i); last_at[w] = i
 
     # every printed word of the sura in order, as (ayah, word); spans move in these units
     ayahs = sorted({w[0] for w in ref_words})
-    order = [(ay, k) for ay in ayahs for k in range(len(ayah_words(meta["sura"], ay)))]
+    order = [(ay, k) for ay in ayahs for k in range(len(ayah_words(ay)))]
     at = {w: i for i, w in enumerate(order)}
 
     def to_word(ay, g, side):
-        gw = group_to_words(meta["sura"], ay)
+        gw = group_to_words(ay)
         ws = gw[g] if g < len(gw) and gw[g] else {0}
         return (ay, min(ws) if side == 0 else max(ws))
     cls, _ = basic_classes(tokens)
@@ -112,7 +119,7 @@ def main():
             ay = order[k][0]; j = k
             while j + 1 <= i1 and order[j + 1][0] == ay:
                 j += 1
-            r = portion(meta["sura"], ay, order[k][1], order[j][1])
+            r = portion(ay, order[k][1], order[j][1])
             if r is None:
                 return None
             toks += r[0]; wids += [(ay, w) for w in r[1]]
@@ -166,13 +173,14 @@ def main():
         half = "thr" if p["start"] < end / 2 else "test"
         inv = {j: w for w, j in local.items()}
         for j in local.values():
-            words.append(dict(piece=p["i"], half=half, ayah=inv[j][0], group=inv[j][1],
+            s_, a_ = split_key(inv[j][0])
+            words.append(dict(piece=p["i"], half=half, key=inv[j][0], sura=s_, ayah=a_, group=inv[j][1],
                               full=full.get(j, 0.0), basic=basic.get(j, 0.0)))
 
     seen_w, real = set(), []
     for w in words:                                      # one row per printed word; basmala left out
-        if w["ayah"] > 0 and (w["ayah"], w["group"]) not in seen_w:
-            seen_w.add((w["ayah"], w["group"])); real.append(w)
+        if w["ayah"] > 0 and (w["key"], w["group"]) not in seen_w:
+            seen_w.add((w["key"], w["group"])); real.append(w)
     thr_rows = [w for w in real if w["half"] == "thr"]
     test_rows = [w for w in real if w["half"] == "test"]
     print(f"scored words: {len(real)} ({len(thr_rows)} threshold half, {len(test_rows)} test half); "
@@ -193,10 +201,10 @@ def main():
     pieces = sorted({w["piece"] for w in test_rows})
     by_piece = {p: [w for w in test_rows if w["piece"] == p] for p in pieces}
     # an ayah counts only if all its printed words were scored in the test half
-    n_groups = {ay: len(ayah_words(meta["sura"], ay)) for ay in {w[0] for w in ref_words}}
+    n_groups = {ay: len(ayah_words(ay)) for ay in {w[0] for w in ref_words}}
     seen = {}
     for w in test_rows:
-        seen.setdefault(w["ayah"], set()).add(w["group"])
+        seen.setdefault(w["key"], set()).add(w["group"])
     full_ayahs = [ay for ay, gs in seen.items() if len(gs) == n_groups[ay]]
 
     results = {}
@@ -210,7 +218,7 @@ def main():
                 s = [w for p in rng.choices(pieces, k=len(pieces)) for w in by_piece[p]]
                 boots.append(np.mean([w[mode] > t[level] for w in s]))
             lo, hi = np.percentile(boots, [2.5, 97.5])
-            ay_flag = np.mean([any(w[mode] > t[level] for w in test_rows if w["ayah"] == ay) for ay in full_ayahs]) if full_ayahs else float("nan")
+            ay_flag = np.mean([any(w[mode] > t[level] for w in test_rows if w["key"] == ay) for ay in full_ayahs]) if full_ayahs else float("nan")
             n_fl = int(sum(flags))
             upper = 3 / len(test_rows) if n_fl == 0 else None
             results[f"{name}/{level}"] = dict(threshold=round(t[level], 3), words=len(test_rows), flagged=n_fl,
@@ -221,11 +229,11 @@ def main():
     # words next to a pause (first or last word of a piece) against words inside a piece
     ends = {}
     for w in test_rows:
-        k = (w["ayah"], w["group"])
+        k = (w["key"], w["group"])
         lo, hi = ends.get(w["piece"], (k, k))
         ends[w["piece"]] = (min(lo, k), max(hi, k))
     for w in test_rows:
-        w["edge"] = (w["ayah"], w["group"]) in ends[w["piece"]]
+        w["edge"] = (w["key"], w["group"]) in ends[w["piece"]]
     for name, t in sets.items():
         mode = name.split("/")[1]
         for level in ("flag", "strong"):

@@ -1,6 +1,9 @@
 """Cuts a long, correct recitation of one sura into pieces and finds which words each piece holds.
 
-  python data_tools/cut_recitation.py AUDIO --sura 2 --out data/long/NAME [--ckpt models/full/best.pt]
+  python data_tools/cut_recitation.py AUDIO --sura 1 2 --out data/long/NAME [--ckpt models/full/best.pt]
+
+--sura lists the suras recited, in order. Each ayah is keyed sura*1000+ayah; key s*1000 is the
+basmala said before sura s (not for 1 and 9).
 
 Steps: 16 kHz mono copy (the original is left alone); split at pauses; decode every piece
 with the model; match each piece to the sura's sound tokens with a moving pointer (on words
@@ -89,25 +92,29 @@ def split_at_pauses(wav, min_sil=0.3, min_piece=1.0, max_piece=25.0, hop=0.01, w
     return [(a * h, min(len(wav), b * h + w)) for a, b in final], dict(floor_db=float(floor), speech_db=float(speech))
 
 
-def sura_stream(sura, with_basmala=True):
-    """The sura's tokens in order, with the (ayah, group) each starts in. Ayah 0 is the basmala."""
-    from quran_transcript import Aya
-    n = Aya(sura, 1).get().num_ayat_in_sura
-    ayahs = ([(0, ayah_uthmani(1, 1))] if with_basmala and sura not in (1, 9) else [])
-    ayahs += [(a, ayah_uthmani(sura, a)) for a in range(1, n + 1)]
-    from quran_transcript import quran_phonetizer
+def sura_stream(suras, with_basmala=True):
+    """Tokens of the suras in order, with the (key, group) each starts in; key = sura*1000+ayah,
+    and sura*1000 is the basmala before that sura."""
+    from quran_transcript import Aya, quran_phonetizer
+    if isinstance(suras, int):
+        suras = [suras]
     toks, words = [], []
-    for a, text in ayahs:
-        ph = quran_phonetizer(text, default_moshaf(), remove_spaces=False).phonemes
-        t, g = fold_with_groups(ph)
-        toks += t; words += [(a, x) for x in g]
+    for sura in suras:
+        n = Aya(sura, 1).get().num_ayat_in_sura
+        ayahs = ([(sura * 1000, ayah_uthmani(1, 1))] if with_basmala and sura not in (1, 9) else [])
+        ayahs += [(sura * 1000 + a, ayah_uthmani(sura, a)) for a in range(1, n + 1)]
+        for key, text in ayahs:
+            ph = quran_phonetizer(text, default_moshaf(), remove_spaces=False).phonemes
+            t, g = fold_with_groups(ph)
+            toks += t; words += [(key, x) for x in g]
     return toks, words
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("audio")
-    ap.add_argument("--sura", type=int, required=True)
+    ap.add_argument("--sura", type=int, nargs="+", required=True, help="suras recited, in order")
+    ap.add_argument("--reuse", action="store_true", help="read saved model output in --out/logp instead of decoding")
     ap.add_argument("--out", required=True)
     ap.add_argument("--ckpt", default=os.path.join(ROOT, "models/full/best.pt"))
     ap.add_argument("--accept", type=float, default=0.15, help="largest mismatch to accept a match")
@@ -126,8 +133,11 @@ def main():
     torch.set_num_threads(8)
     ck = torch.load(a.ckpt, map_location="cpu")
     tokens = ck["tokens"]; vocab = {t: i for i, t in enumerate(tokens)}; blank = len(tokens)
-    model = QafModel(len(tokens)).eval().to(a.device)
-    model.load_state_dict(ck["model"])
+    have = lambda k: os.path.exists(os.path.join(a.out, "logp", f"{k:04d}.npy"))
+    model = None
+    if not (a.reuse and all(have(k) for k in range(len(spans)))):
+        model = QafModel(len(tokens)).eval().to(a.device)
+        model.load_state_dict(ck["model"])
     cls, _ = basic_classes(tokens)
 
     ref_toks, ref_words = sura_stream(a.sura)
@@ -171,10 +181,13 @@ def main():
     pieces, ptr, fails = [], 0, 0
     with torch.no_grad():
         for k, (s, e) in enumerate(spans):
-            x = torch.from_numpy(wav[s:e]).unsqueeze(0).to(a.device)
-            lp, hl = model(x, torch.tensor([x.shape[1]], device=a.device))
-            lp = lp[0, : hl[0]].float().cpu()
-            np.save(os.path.join(a.out, "logp", f"{k:04d}.npy"), lp.numpy().astype(np.float16))
+            if model is None:
+                lp = torch.from_numpy(np.load(os.path.join(a.out, "logp", f"{k:04d}.npy")).astype(np.float32))
+            else:
+                x = torch.from_numpy(wav[s:e]).unsqueeze(0).to(a.device)
+                lp, hl = model(x, torch.tensor([x.shape[1]], device=a.device))
+                lp = lp[0, : hl[0]].float().cpu()
+                np.save(os.path.join(a.out, "logp", f"{k:04d}.npy"), lp.numpy().astype(np.float16))
             hyp = [i for i in torch.unique_consecutive(lp.argmax(-1)).tolist() if i != blank]
             hb = []
             for t in hyp:
@@ -223,8 +236,8 @@ def main():
         if p["status"] == "matched" and p["how"] != "repeat":
             for w in set(word_of[p["ref"][0]: p["ref"][1]]):
                 count[w] += 1
-    once = sum(1 for w in all_words if w[0] > 0 and count[w] == 1)
-    real = [w for w in all_words if w[0] > 0]
+    once = sum(1 for w in all_words if w[0] % 1000 and count[w] == 1)
+    real = [w for w in all_words if w[0] % 1000]
     gaps = [w for w in real if count[w] == 0]
     multi = [w for w in real if count[w] > 1]
     status = {}
@@ -236,7 +249,7 @@ def main():
            f"re-anchored: {sum(1 for p in pieces if p.get('how') == 're-anchored')}\nlevels: {levels}\n")
     print(rep, flush=True)
     open(os.path.join(a.out, "coverage.txt"), "w").write(rep)
-    json.dump(dict(sura=a.sura, ckpt=os.path.basename(a.ckpt), tokens=tokens, pieces=pieces, ref_len=len(ref_s)),
+    json.dump(dict(suras=a.sura, ckpt=os.path.basename(a.ckpt), tokens=tokens, pieces=pieces, ref_len=len(ref_s)),
               open(os.path.join(a.out, "pieces.json"), "w"), indent=1)
 
 
