@@ -8,7 +8,7 @@ folded into count tokens. No language model. Mistakes are found by a separate ch
 Current target: words and vowels. Tajweed judging comes last.
 
 ## Where things are
-- Branch `labeler-tajweed` holds everything (stacked on docs-notes, labeler, checker). `main` has one commit.
+- Everything is on `main` (branch `labeler-tajweed` is merged).
 - Trained: pilot (suras 78-114) and full run (all suras, 30,000 steps, about 9 GPU-hours).
 - Built: evaluation command, mistake generator, labelling tool (batch queue, suggestion review,
   sound-level annotation, tajweed colouring), phone-clip scoring.
