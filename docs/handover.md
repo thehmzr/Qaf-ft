@@ -9,7 +9,7 @@ and `research_summary.md` for numbers and sources.
 |---|---|---|
 | Sound tokens (81) | `qafft/phonetic.py`, `qafft/vocab.json` | Done |
 | Training scripts | `train/pilot.py`, `train/full.py`, `train/kaggle_*.ipynb` | Done, run on Kaggle |
-| Trained model | Kaggle kernel `qaf-full-run`, output `full/best.pt` (418 MB) | 0.43% token error on held-out reciters |
+| Trained model | Kaggle kernel `qaf-full-run`, output `full/best.pt` (418 MB) | 0.43% token error on held-out reciters. `best.pt` is the step-19,000 checkpoint (lowest validation error) of the 30,000-step run |
 | Checker | `qafft/verify.py` | Alignment score + extra-sound check; words-and-vowels mode added, not yet measured |
 | Mistake generator | `qafft/mistakes.py` | Done |
 | Metrics | `qafft/mdd.py`, `eval/evaluate.py` | Done |
@@ -18,31 +18,32 @@ and `research_summary.md` for numbers and sources.
 | Batch builder | `data_tools/make_queue.py`, `propose.py` | Done |
 | Text and tajweed colours | `qafft/quran_text.py`, `qafft/tajweed_text.py` | Done |
 
-Branch `labeler-tajweed` holds all of it. Nothing is merged into `main` yet.
+Branch `labeler-tajweed` is merged into `main`; all of it is on `main`.
 
 ## 2. Set up on a new machine
 
 ```bash
-git clone https://github.com/thehmzr/Qaf-ft && cd Qaf-ft && git checkout labeler-tajweed
-python3 -m venv .venv && source .venv/bin/activate
+git clone https://github.com/thehmzr/Qaf-ft && cd Qaf-ft
+python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-`requirements.txt` includes the model libraries (several GB). For the labelling tool alone,
-`pip install quran-transcript rapidfuzz` is enough.
+Tested with Python 3.12. `requirements.txt` pins versions known to work and includes the model
+libraries (several GB). It also has `kaggle` and `six`: the Kaggle CLI needs `six` but does not
+install it. For the labelling tool alone, `pip install quran-transcript rapidfuzz` is enough.
 
 Files that are not in git and must be fetched again:
 
 | File | How |
 |---|---|
 | Base checkpoint | `huggingface-cli download nvidia/stt_ar_fastconformer_hybrid_large_pcd_v1.0` or let the code download it |
-| `models/full/best.pt` | Kaggle: kernel `qaf-full-run`, Output tab, or `kaggle kernels output thehmzr/qaf-full-run -p models/full` |
+| `models/full/best.pt` | Kaggle: kernel `qaf-full-run`, Output tab, or `kaggle kernels output thehmzr/qaf-full-run -p models --file-pattern 'best\.pt$'` (the output keeps its `full/` folder) |
 | Display text | first start of the labelling tool, or `python -m qafft.quran_text` |
 | `data/ayah_tokens.json` | built by the snippet at the top of `data_tools/phone_filter.py`'s history; one loop over `ayah_tokens` |
 | Held-out reciters' data | `obadx/muaalem-annotated-v3`, moshaf 5.0 and 13.0 (test), 19.0 (validation) |
 | Phone recordings | `deepdml/tlog-clean-sf16k`, 79 files of 5,000 clips |
 
-Accounts needed: a Kaggle API token (`~/.kaggle/kaggle.json`) to push and read runs, and a
+Accounts needed: a Kaggle API token (`~/.kaggle/access_token`, or the older `~/.kaggle/kaggle.json`) to push and read runs, and a
 Hugging Face token for gated sets.
 
 ## 3. Rules that hold
