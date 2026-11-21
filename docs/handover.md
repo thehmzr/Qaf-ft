@@ -166,3 +166,46 @@ from the source files, or update the existing ones if it has access to them.
 - Research notes and numbers go in `docs/`, never in commit or pull request text.
 - People are named by role only: the user, the reciter, the qari, the listener.
 - The user's own recording sessions stay local.
+
+## 12. The system as a whole
+
+The aim is a workbench the user owns and runs, so the model does not depend on other people's
+datasets or licences. Five parts, each usable on its own:
+
+| Part | What it does | Where | State |
+|---|---|---|---|
+| Labelling | Listen to a clip, confirm or reject the model's suggestions, mark what it missed, record what was said sound by sound | `labeler/` | Working |
+| Data building | Turn text into sound tokens, score and filter phone clips, build labelling batches, generate mistakes | `qafft/phonetic.py`, `qafft/mistakes.py`, `data_tools/` | Working; long-recitation cutting not built |
+| Training | One script per stage, run on a GPU session | `train/` | Expert stage done; phone and mistake stages not built |
+| Evaluation | Score any checkpoint on labelled clips or planted mistakes, with intervals by reciter | `eval/`, `qafft/verify.py`, `qafft/mdd.py` | Working |
+| Export | Compress the model and measure speed on a phone | — | Not started |
+
+How the parts feed each other:
+
+1. The model scores unlabelled recordings.
+2. Clips it is sure about go into training; clips it doubts go to the labelling tool.
+3. The user's decisions become new training and test data.
+4. The model is retrained and measured on the labels it has not seen.
+5. Repeat. Each round the doubted share should shrink.
+
+## 13. Strategy
+
+- **Hear sounds, not text.** The model writes what was said and never sees the ayah. A separate
+  checker compares. This is what keeps mistakes from being silently corrected.
+- **Words and vowels first.** Most users are not trained reciters. A wrong, missing or added word,
+  a wrong letter, a wrong vowel, a missing long vowel or a dropped doubling is a mistake. Lengths of
+  madd and ghunnah, hidden noon and meem, and qalqalah are left to a later tajweed mode.
+- **False flags are the number that matters.** A flag on correct recitation costs more than a missed
+  mistake. Thresholds are set for a fixed false-flag rate, with a third "unsure" outcome that shows
+  nothing. The per-word target is 0.1% or lower, because rates add up across an ayah and a session.
+- **Stages, in this order.** Expert reciters (done), real phone audio, generated mistakes, then
+  real labelled mistakes last. Published results show that order beats mixing.
+- **Own data over borrowed data.** The scarce thing is real mistakes located at the word, by
+  ordinary people on phones. No public set has it, so the user's labels are the core asset.
+- **Keep the licence free.** Only sources that allow any licence go into the model, so the result
+  can be released on the user's own terms with credits kept.
+- **Measure honestly.** Whole reciters held out, results resampled by reciter, planted-mistake
+  results never presented as real-world results, and label agreement reported beside every score.
+- **Small enough for a phone.** One model does tracking and checking; the plan is to run it on the
+  device, with a smaller student model if the current one is too slow.
+- **Learn by owning it.** Every piece is a plain script or a local page the user can run and change.
