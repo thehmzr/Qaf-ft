@@ -80,6 +80,8 @@ def main():
     ap.add_argument("--limit", type=int, default=300)
     ap.add_argument("--first-sura", type=int, default=1)
     ap.add_argument("--out", default=None)
+    ap.add_argument("--variants", action="store_true",
+                    help="score every word against legal reading choices too and keep its best score")
     a = ap.parse_args()
     from pilot import QafModel
     torch.set_num_threads(4)
@@ -105,12 +107,39 @@ def main():
             bad[g] = max(bad.get(g, 0.0), v)
         return bad
 
+    def readings(text):
+        """token lists of the clip text under the default reading and each distinct variant"""
+        from quran_transcript import quran_phonetizer
+        from qafft.variants import VARIANTS, moshaf
+        out, seen = [], set()
+        for name in VARIANTS:
+            try:
+                t, _ = fold_with_groups(quran_phonetizer(text, moshaf(name), remove_spaces=False).phonemes)
+            except Exception:
+                continue
+            if tuple(t) not in seen:
+                seen.add(tuple(t)); out.append(t)
+        return out
+
+    def score_v(lp, toks, grps, reads):
+        """best score per word over the clip's own reading and the variant edits applied to it"""
+        if not reads:
+            return score(lp, toks, grps)
+        from qafft.variants import best_of, transfer
+        alts = [(toks, grps)] + [transfer(toks, grps, reads[0], r) for r in reads[1:]]
+        alts = [x for x in alts if all(t in vocab for t in x[0])]
+        seen, res = set(), []
+        for t, g in alts:
+            if tuple(t) not in seen:
+                seen.add(tuple(t)); res.append(score(lp, t, g))
+        return None if res[0] is None else best_of(res)
+
     by, kinds, n = {}, {}, 0
     for f in a.shards:
         n = 0                                  # the limit applies to each file
         pf = pq.ParquetFile(f)
         for rg in range(pf.num_row_groups):
-            for r in pf.read_row_group(rg, columns=["audio", "phonemes", "start_span", "duration_seconds", "moshaf_id"]).to_pylist():
+            for r in pf.read_row_group(rg, columns=["audio", "phonemes", "uthmani", "start_span", "duration_seconds", "moshaf_id"]).to_pylist():
                 if n >= a.limit:
                     break
                 if not r["start_span"] or r["start_span"]["sura_idx"] < a.first_sura or r["duration_seconds"] > 20:
@@ -120,11 +149,12 @@ def main():
                     continue
                 wav, sr = sf.read(io.BytesIO(r["audio"]["bytes"]), dtype="float32")
                 lp = logp(wav)
-                good = score(lp, toks, grps)
+                reads = readings(r["uthmani"]) if a.variants else []
+                good = score_v(lp, toks, grps, reads)
                 p = perturb(toks, grps, rng, vocab)
                 if good is None or p is None:
                     continue
-                bad = score(lp, p[0], p[1])
+                bad = score_v(lp, p[0], p[1], reads)
                 if bad is None:
                     continue
                 rows = by.setdefault(r["moshaf_id"], [])

@@ -156,3 +156,30 @@ Reading: dropping tajweed detail does not lower the flags. At 1% it flags more, 
 threshold falls further on studio audio than the scores do on phone audio. Strong flags stay the
 same (21% vs 22%): the words that fail clearly fail on letters and vowels, not on lengths. The gap
 is acoustic, which points to the phone fine-tune. One labeller, small sample.
+
+## Legal reading choices (best of several readings per word)
+
+The checker scores each word against one reading (madd 4 everywhere). `qafft/variants.py`
+phonetizes a span under a short list of other legal Hafs choices and keeps, per printed word
+(matched through `wordmap.map_tokens`), the lowest badness.
+
+- Choices that change the sound tokens: madd munfasil length (2, 4, 5), madd muttasil and its
+  pause form (4, 5, 6), madd aarid (2, 4, 6) and madd leen at a pause (up to the aarid length),
+  ghunnah of noon/tanween into lam and ra, seen or saad in the four words that allow both, and
+  the fixed places of sakt or not (iwaja, marqadina, man raq, bal ran, maaliyah), saktat before
+  hamz, and a few single words (ءآلذكرين, يلهث ذلك, اركب معنا, the meem of الم الله). Only the
+  madd lengths, ghunnah of lam/ra and seen/saad are varied for now; the single-word cases are
+  rare and the sakt places are outside the sets measured here.
+- On the long correct recitation (sura 2) the lowest score came from the default reading for
+  94% of words, from short munfasil for 4% and short aarid for 2%; other choices never won.
+  At the default threshold false flags on the test half fell from 0.85% to 0.37%. With
+  thresholds re-set on the first half, the 1% threshold drops from 9.16 to 5.82, so the checker
+  can be stricter at the same false-flag rate.
+- On 32 correct phone clips nothing changed (2 of 121 word scores lowered, no flag removed):
+  their false flags are not about free madd lengths.
+- Planted mistakes on one studio shard: catch at 1% and 0.1% unchanged (99.3%, 98.7%). A
+  planted madd length that equals another legal choice would be accepted by design; the
+  planted set did not show that cost.
+- Recommendation: use best-of for the madd families (cheap: 2-8 readings per span). Thresholds
+  must then be set with best-of scores too.
+
