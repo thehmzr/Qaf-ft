@@ -75,6 +75,7 @@ def main():
     ap.add_argument("dir")
     ap.add_argument("--thresholds", default=None, help="json with per-mode thresholds from another set")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--scores-out", default=None, help="where to write per-word scores (default: DIR/word_scores.json)")
     a = ap.parse_args()
     meta = json.load(open(os.path.join(a.dir, "pieces.json")))
     tokens = json.load(open(os.path.join(ROOT, "qafft", "vocab.json")))["tokens"]
@@ -202,9 +203,26 @@ def main():
                                               ayahs=len(full_ayahs), ayah_rate=float(ay_flag))
             print(f"{name:<22} {level:<6} thr {t[level]:6.3f}  {n_fl:4d}/{len(test_rows)} words = {rate:.2%} "
                   f"(95% {lo:.2%}-{hi:.2%})  ayahs with a flag: {ay_flag:.1%} of {len(full_ayahs)}")
+    # words next to a pause (first or last word of a piece) against words inside a piece
+    ends = {}
+    for w in test_rows:
+        k = (w["ayah"], w["group"])
+        lo, hi = ends.get(w["piece"], (k, k))
+        ends[w["piece"]] = (min(lo, k), max(hi, k))
+    for w in test_rows:
+        w["edge"] = (w["ayah"], w["group"]) in ends[w["piece"]]
+    for name, t in sets.items():
+        mode = name.split("/")[1]
+        for level in ("flag", "strong"):
+            r = results[f"{name}/{level}"]
+            for part, rows in (("inside", [w for w in test_rows if not w["edge"]]), ("edge", [w for w in test_rows if w["edge"]])):
+                n_fl = int(sum(w[mode] > t[level] for w in rows))
+                r[part] = dict(words=len(rows), flagged=n_fl, rate=n_fl / len(rows) if rows else None)
+            print(f"{name:<22} {level:<6} inside a piece {r['inside']['flagged']}/{r['inside']['words']} = {r['inside']['rate'] or 0:.2%}; "
+                  f"next to a pause {r['edge']['flagged']}/{r['edge']['words']} = {r['edge']['rate'] or 0:.2%}")
     out = a.out or os.path.join(a.dir, "false_flags.json")
     json.dump(dict(results=results, thresholds=sets, n_words=len(real)), open(out, "w"), indent=1)
-    json.dump(words, open(os.path.join(a.dir, "word_scores.json"), "w"))
+    json.dump(words, open(a.scores_out or os.path.join(a.dir, "word_scores.json"), "w"))
     print("wrote", out)
 
 
