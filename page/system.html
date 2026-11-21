@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qaf-ft System</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* layout: one reading column; each section = a claim, a figure, then the numbers behind it */
+  --paper:#f4f3ee;--surface:#fffefa;--ink:#18211f;--muted:#5f6b67;--line:#d9d5c8;
+  --accent:#0b6e6a;--soft:#d7ecea;--crit:#b3261e;--critsoft:#f9dcd8;--good:#1d7a45;
+  --ui:"IBM Plex Sans",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,monospace;
+  --ar:"Amiri Quran","Amiri","Traditional Arabic",serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --paper:#101615;--surface:#171f1e;--ink:#e7eeec;--muted:#93a29e;--line:#2b3735;
+  --accent:#55c7c0;--soft:#16403d;--crit:#f08379;--critsoft:#4a211d;--good:#5fcb8d;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --paper:#101615;--surface:#171f1e;--ink:#e7eeec;--muted:#93a29e;--line:#2b3735;
+  --accent:#55c7c0;--soft:#16403d;--crit:#f08379;--critsoft:#4a211d;--good:#5fcb8d;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font:16px/1.55 var(--ui)}
+main{max-width:920px;margin:0 auto;padding:36px 18px 80px}
+header{border-bottom:2px solid var(--ink);padding-bottom:16px;margin-bottom:8px}
+h1{font-size:34px;line-height:1.15;margin:0 0 6px;text-wrap:balance}
+.lede{color:var(--muted);max-width:66ch;margin:0}
+h2{font-size:22px;margin:44px 0 6px;text-wrap:balance}
+h2 span{font:500 13px var(--mono);color:var(--accent);display:block;margin-bottom:2px}
+p{max-width:68ch;margin:10px 0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:20px 0 0}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kpi b{display:block;font-size:26px;font-variant-numeric:tabular-nums}
+.kpi span{font-size:13px;color:var(--muted)}
+figure{margin:18px 0;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;overflow-x:auto}
+figure svg{display:block;max-width:100%;height:auto;min-width:640px;color:var(--ink)}
+figcaption{font-size:13.5px;color:var(--muted);margin-top:10px;max-width:74ch}
+.rows{display:grid;grid-template-columns:auto 1fr;gap:8px 14px;align-items:center;min-width:600px}
+.rows .lab{font:500 12.5px var(--mono);color:var(--muted);white-space:nowrap}
+.seq{display:flex;flex-wrap:wrap;gap:4px;direction:rtl;justify-content:flex-start}
+.tk{font:18px var(--ar);min-width:28px;text-align:center;padding:0 6px;border:1px solid var(--line);border-radius:6px;background:var(--paper);line-height:1.9}
+.tk.gap{border:none;background:none;min-width:8px;padding:0}
+.tk.bad{background:var(--critsoft);border-color:var(--crit);color:var(--crit)}
+.tk.len{background:var(--soft);border-color:var(--accent)}
+.wrap{overflow-x:auto;margin:14px 0}
+table{border-collapse:collapse;width:100%;font-size:14.5px;background:var(--surface)}
+th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;font-variant-numeric:tabular-nums;vertical-align:top}
+th{font-size:12.5px;color:var(--muted);font-weight:600}
+td.n,th.n{text-align:right}
+code,pre{font-family:var(--mono);font-size:13.5px}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;overflow-x:auto;margin:12px 0}
+.note{font-size:14px;color:var(--muted)}
+.ar{font-family:var(--ar);font-size:22px}
+.done{color:var(--good);font-weight:600}.next{color:var(--accent);font-weight:600}.later{color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>Qaf-ft system</h1>
+  <p class="lede">A speech model for Quran recitation that writes down the sounds it hears and compares them with the expected ayah, so a mistake is located at the word and named. This page is the technical reference: how it works, how it is trained and labelled, and what has been measured.</p>
+  <div class="kpis">
+    <div class="kpi"><b>0.43%</b><span>sound-token errors on two reciters never trained on</span></div>
+    <div class="kpi"><b>98.3%</b><span>of planted mistakes caught while flagging 1% of correct words</span></div>
+    <div class="kpi"><b>81</b><span>sound tokens cover the whole Quran</span></div>
+    <div class="kpi"><b>115M</b><span>parameters, about 9 GPU-hours to train</span></div>
+  </div>
+</header>
+
+<h2><span>01</span>The task</h2>
+<p>The reciter reads a known ayah. The model does not see the text: it listens and writes a sequence of sounds. A separate checker compares that sequence with the sounds the ayah should have. Keeping the model blind to the text is deliberate; models that output Quran text quietly correct mistakes back to the memorised wording.</p>
+<figure>
+<svg viewBox="0 0 880 250" role="img" aria-label="Workflow: the ayah gives expected sounds, the recording goes through the model to give heard sounds, and the checker compares the two to produce flags. A human annotation of what was said is used only to score the system.">
+  <defs><marker id="a1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>
+  <g fill="none" stroke="currentColor" stroke-width="1.4">
+    <rect x="20" y="20" width="150" height="54" rx="8"/><rect x="250" y="20" width="190" height="54" rx="8"/>
+    <rect x="20" y="118" width="150" height="54" rx="8"/><rect x="250" y="118" width="190" height="54" rx="8"/>
+    <rect x="520" y="69" width="150" height="54" rx="8" stroke="#0b6e6a" stroke-width="2.4"/><rect x="740" y="69" width="120" height="54" rx="8"/>
+    <rect x="250" y="196" width="190" height="40" rx="8" stroke-dasharray="5 4"/>
+    <path d="M170 47H248" marker-end="url(#a1)"/><path d="M170 145H248" marker-end="url(#a1)"/>
+    <path d="M440 47H480V88H518" marker-end="url(#a1)"/><path d="M440 145H480V104H518" marker-end="url(#a1)"/>
+    <path d="M670 96H738" marker-end="url(#a1)"/><path d="M440 216H595V125" stroke-dasharray="5 4" marker-end="url(#a1)"/>
+  </g>
+  <g fill="currentColor" font-family="IBM Plex Sans, sans-serif" font-size="13" text-anchor="middle">
+    <text x="95" y="43" font-weight="600">Known ayah</text><text x="95" y="61" font-size="11.5">from the mushaf</text>
+    <text x="345" y="43" font-weight="600">Expected sounds</text><text x="345" y="61" font-size="11.5">rules applied to the text</text>
+    <text x="95" y="141" font-weight="600">Recording</text><text x="95" y="159" font-size="11.5">16 kHz, one channel</text>
+    <text x="345" y="141" font-weight="600">Heard sounds</text><text x="345" y="159" font-size="11.5">model output, no text given</text>
+    <text x="595" y="92" font-weight="600">Checker</text><text x="595" y="110" font-size="11.5">compare, score, decide</text>
+    <text x="800" y="92" font-weight="600">Flags</text><text x="800" y="110" font-size="11.5">word + kind</text>
+    <text x="345" y="221" font-size="12.5">Annotated sounds (a person)</text>
+    <text x="209" y="40" font-size="11">phonetise</text><text x="209" y="138" font-size="11">model</text><text x="704" y="89" font-size="11">threshold</text><text x="520" y="232" font-size="11">used only to score</text>
+  </g>
+</svg>
+<figcaption>Two independent paths meet at the checker. The dashed path exists only during evaluation: a person writes what was actually said, and the system is scored against it.</figcaption>
+</figure>
+<figure>
+  <div class="rows">
+    <span class="lab">ayah 112:1</span><div class="seq"><span class="ar">قُلْ هُوَ ٱللَّهُ أَحَدٌ</span></div>
+    <span class="lab">expected</span><div class="seq"><span class="tk">ق</span><span class="tk">ُ</span><span class="tk">ل</span><span class="tk gap"></span><span class="tk">ه</span><span class="tk">ُ</span><span class="tk">و</span><span class="tk">َ</span><span class="tk gap"></span><span class="tk len">ل2</span><span class="tk">َ</span><span class="tk len">ا2</span><span class="tk">ه</span><span class="tk">ُ</span><span class="tk gap"></span><span class="tk">ء</span><span class="tk">َ</span><span class="tk">ح</span><span class="tk">َ</span><span class="tk">د</span><span class="tk">ڇ</span></div>
+    <span class="lab">heard</span><div class="seq"><span class="tk">ق</span><span class="tk">ُ</span><span class="tk">ل</span><span class="tk gap"></span><span class="tk">ه</span><span class="tk">ُ</span><span class="tk">و</span><span class="tk">َ</span><span class="tk gap"></span><span class="tk len">ل2</span><span class="tk">َ</span><span class="tk len">ا2</span><span class="tk">ه</span><span class="tk">ُ</span><span class="tk gap"></span><span class="tk">ء</span><span class="tk">َ</span><span class="tk bad">ه</span><span class="tk">َ</span><span class="tk">د</span><span class="tk">ڇ</span></div>
+    <span class="lab">annotated</span><div class="seq"><span class="tk">ق</span><span class="tk">ُ</span><span class="tk">ل</span><span class="tk gap"></span><span class="tk">ه</span><span class="tk">ُ</span><span class="tk">و</span><span class="tk">َ</span><span class="tk gap"></span><span class="tk len">ل2</span><span class="tk">َ</span><span class="tk len">ا2</span><span class="tk">ه</span><span class="tk">ُ</span><span class="tk gap"></span><span class="tk">ء</span><span class="tk">َ</span><span class="tk bad">ه</span><span class="tk">َ</span><span class="tk">د</span><span class="tk">ڇ</span></div>
+  </div>
+  <figcaption>Illustration, read right to left. The reciter says ه where ح is expected in the last word. Heard differs from expected, so the word is flagged; annotated agrees with heard, so the flag counts as a correct catch. Tinted tokens carry a length: <code>ل2</code> is a doubled lam, <code>ا2</code> a two-count alif. <code>ڇ</code> marks qalqalah.</figcaption>
+</figure>
+
+<h2><span>02</span>Sound tokens</h2>
+<p>Text is converted to sounds by rule, not by ear: an open phonetic script for the Quran applies the tajweed rules to the Uthmani text. It writes a lengthened sound as a repeated symbol. Repeats are folded into one token with a count, which keeps sequences short and guarantees no two neighbouring tokens are equal.</p>
+<div class="wrap"><table>
+<tr><th>Kind</th><th>Tokens</th><th>What the count means</th></tr>
+<tr><td>Consonants</td><td>28 letters, plain or doubled (<code>ب</code>, <code>ب2</code>)</td><td>2 = shaddah or merged with the next word</td></tr>
+<tr><td>Short vowels</td><td>fathah, dammah, kasrah</td><td>none</td></tr>
+<tr><td>Long vowels (madd)</td><td>alif, waw, ya with 2, 4, 5 or 6</td><td>the number of counts held</td></tr>
+<tr><td>Nasal sounds</td><td>noon and meem with 3 or 4, hidden noon, hidden meem</td><td>ghunnah held</td></tr>
+<tr><td>Marks</td><td>qalqalah, and a few rare signs</td><td>none</td></tr>
+</table></div>
+<p class="note">81 tokens in total, built by running the converter over all 6,236 ayahs with madd settings of 2, 4 and 6. A median ayah is 69 tokens.</p>
+
+<h2><span>03</span>The model</h2>
+<figure>
+<svg viewBox="0 0 880 150" role="img" aria-label="Model pipeline: audio becomes 80 features per frame at 100 frames a second, the encoder reduces that to 12.5 frames a second, a small layer doubles it to 25, and an output layer gives a probability for each of 81 tokens plus blank at every frame.">
+  <defs><marker id="a2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>
+  <g fill="none" stroke="currentColor" stroke-width="1.4">
+    <rect x="14" y="42" width="120" height="58" rx="8"/><rect x="176" y="42" width="130" height="58" rx="8"/>
+    <rect x="348" y="30" width="180" height="82" rx="8" stroke-width="2.4" stroke="#0b6e6a"/>
+    <rect x="570" y="42" width="120" height="58" rx="8"/><rect x="732" y="42" width="134" height="58" rx="8"/>
+    <path d="M134 71H174" marker-end="url(#a2)"/><path d="M306 71H346" marker-end="url(#a2)"/><path d="M528 71H568" marker-end="url(#a2)"/><path d="M690 71H730" marker-end="url(#a2)"/>
+  </g>
+  <g fill="currentColor" font-family="IBM Plex Sans, sans-serif" font-size="13" text-anchor="middle">
+    <text x="74" y="67" font-weight="600">Audio</text><text x="74" y="85" font-size="11.5">16,000 samples/s</text>
+    <text x="241" y="67" font-weight="600">Mel features</text><text x="241" y="85" font-size="11.5">80 values, 100/s</text>
+    <text x="438" y="58" font-weight="600">FastConformer encoder</text><text x="438" y="76" font-size="11.5">17 layers, about 115M weights</text><text x="438" y="94" font-size="11.5">12.5 frames/s out</text>
+    <text x="630" y="67" font-weight="600">Upsample ×2</text><text x="630" y="85" font-size="11.5">25 frames/s</text>
+    <text x="799" y="67" font-weight="600">Output layer</text><text x="799" y="85" font-size="11.5">81 tokens + blank</text>
+    <text x="438" y="134" font-size="11.5">starts from NVIDIA's Arabic checkpoint; the two layers after it are new</text>
+  </g>
+</svg>
+<figcaption>The encoder is fine-tuned from an Arabic checkpoint; the upsampling and output layers are trained from nothing. Training uses the CTC loss, which needs no timing labels: only the audio and its token sequence. The doubling to 25 frames a second leaves room for fast recitation, where sounds can outnumber encoder frames.</figcaption>
+</figure>
+
+<h2><span>04</span>The checker</h2>
+<p>For every expected word the checker asks two questions and keeps the worse answer.</p>
+<figure>
+<svg viewBox="0 0 880 210" role="img" aria-label="The checker asks whether each expected sound is present, using alignment, and whether any heard sound is absent from the expected text, using free decoding. The larger of the two becomes the word's score, which a threshold turns into pass, unsure or flag.">
+  <defs><marker id="a3" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="currentColor"/></marker></defs>
+  <g fill="none" stroke="currentColor" stroke-width="1.4">
+    <rect x="14" y="76" width="140" height="58" rx="8"/>
+    <rect x="216" y="18" width="270" height="70" rx="8"/><rect x="216" y="122" width="270" height="70" rx="8"/>
+    <rect x="548" y="76" width="130" height="58" rx="8" stroke="#0b6e6a" stroke-width="2.4"/>
+    <rect x="740" y="18" width="126" height="40" rx="8"/><rect x="740" y="85" width="126" height="40" rx="8" stroke-dasharray="5 4"/><rect x="740" y="152" width="126" height="40" rx="8" stroke="#b3261e" stroke-width="2"/>
+    <path d="M154 96H185V53H214" marker-end="url(#a3)"/><path d="M154 114H185V157H214" marker-end="url(#a3)"/>
+    <path d="M486 53H517V96H546" marker-end="url(#a3)"/><path d="M486 157H517V114H546" marker-end="url(#a3)"/>
+    <path d="M678 96H709V38H738" marker-end="url(#a3)"/><path d="M678 105H738" marker-end="url(#a3)"/><path d="M678 114H709V172H738" marker-end="url(#a3)"/>
+  </g>
+  <g fill="currentColor" font-family="IBM Plex Sans, sans-serif" font-size="13" text-anchor="middle">
+    <text x="84" y="101" font-weight="600">Frame-by-frame</text><text x="84" y="119" font-size="11.5">token probabilities</text>
+    <text x="351" y="44" font-weight="600">Is each expected sound there?</text><text x="351" y="62" font-size="11.5">align expected tokens to the audio;</text><text x="351" y="78" font-size="11.5">score = weakest sound in the word</text>
+    <text x="351" y="148" font-weight="600">Is there a sound that should not be?</text><text x="351" y="166" font-size="11.5">decode freely; charge each unmatched</text><text x="351" y="182" font-size="11.5">sound to the word beside it</text>
+    <text x="613" y="101" font-weight="600">Word score</text><text x="613" y="119" font-size="11.5">larger of the two</text>
+    <text x="803" y="43">pass</text><text x="803" y="110">unsure: say nothing</text><text x="803" y="177">flag</text>
+  </g>
+</svg>
+<figcaption>The first question alone misses anything added or left unspoken that the text does not list, such as a qalqalah where none belongs. Adding the second question took that kind of mistake from 0% caught to 84–88%. The unsure band is where the system stays silent instead of risking a false flag.</figcaption>
+</figure>
+<p>Thresholds are set from correct recitation by reciters the model never trained on: a word's score is compared with the scores of known-correct words, and the cut-off is chosen for a fixed share of false flags.</p>
+
+<h2><span>05</span>Why the false-flag rate has to be tiny</h2>
+<p>Each word is a separate decision, so small per-word rates add up over an ayah and a session.</p>
+<div class="wrap"><table>
+<tr><th>False flags per correct word</th><th class="n">10-word ayah</th><th class="n">30-word ayah</th><th class="n">300-word session</th></tr>
+<tr><td>5%</td><td class="n">40%</td><td class="n">79%</td><td class="n">~100%</td></tr>
+<tr><td>1%</td><td class="n">10%</td><td class="n">26%</td><td class="n">95%</td></tr>
+<tr><td>0.1%</td><td class="n">1%</td><td class="n">3%</td><td class="n">26%</td></tr>
+<tr><td>0.03%</td><td class="n">0.3%</td><td class="n">0.9%</td><td class="n">9%</td></tr>
+</table></div>
+<p class="note">Chance of at least one false flag, assuming independent words: 1 − (1 − rate)<sup>words</sup>. The working target is 0.1% or lower, which is why results below are reported at 0.1% as well as 1%.</p>
+
+<h2><span>06</span>Training stages</h2>
+<div class="wrap"><table>
+<tr><th>Stage</th><th>Data</th><th>Purpose</th><th>Status</th></tr>
+<tr><td>1. Pilot</td><td>Suras 78–114, about 27 hours, expert reciters</td><td>Prove the pipeline, choose settings</td><td class="done">Done: 1.2% token errors</td></tr>
+<tr><td>2. Full run</td><td>All suras, expert reciters, 188 data files streamed one at a time</td><td>The base listening model</td><td class="done">Done: 0.43% token errors</td></tr>
+<tr><td>3. Phone audio</td><td>Real phone recordings, kept only where the model agrees with the claimed ayah</td><td>Ordinary voices, rooms and microphones</td><td class="next">Scoring under way</td></tr>
+<tr><td>4. Mistakes</td><td>Generated mistakes first, then recordings labelled with the tool</td><td>Teach what a mistake sounds like</td><td class="next">Generator built, labels needed</td></tr>
+<tr><td>5. Verifier</td><td>Scores from held-out correct recitation and labelled clips</td><td>Calibrated thresholds, three-way decision</td><td class="later">After stage 4</td></tr>
+<tr><td>6. Phone export</td><td>—</td><td>Compress and measure speed on a device</td><td class="later">Last</td></tr>
+</table></div>
+<p class="note">Three reciters are held out from every stage: one for validation, two for testing. Order matters in stage 4: published results show generated mistakes followed by real ones beat mixing the two.</p>
+
+<h2><span>07</span>Measured so far</h2>
+<div class="wrap"><table>
+<tr><th>Checker on 800 clips, two unseen reciters, one planted mistake each</th><th class="n">Pilot</th><th class="n">Full run</th></tr>
+<tr><td>Caught at 5% false flags</td><td class="n">99.4%</td><td class="n">99.9%</td></tr>
+<tr><td>Caught at 1% false flags</td><td class="n">97.0%</td><td class="n">98.3%</td></tr>
+<tr><td>Caught at 0.1% false flags</td><td class="n">82.5%</td><td class="n">92.1%</td></tr>
+</table></div>
+<div class="wrap"><table>
+<tr><th>By kind of mistake, full run, at 1% false flags</th><th class="n">Caught</th><th class="n">Clips</th></tr>
+<tr><td>Wrong letter</td><td class="n">100%</td><td class="n">199</td></tr>
+<tr><td>Wrong short vowel</td><td class="n">100%</td><td class="n">185</td></tr>
+<tr><td>Dropped doubling</td><td class="n">100%</td><td class="n">98</td></tr>
+<tr><td>Dropped ghunnah</td><td class="n">100%</td><td class="n">77</td></tr>
+<tr><td>Wrong madd length</td><td class="n">97%</td><td class="n">183</td></tr>
+<tr><td>Missing qalqalah</td><td class="n">84%</td><td class="n">58</td></tr>
+</table></div>
+<p class="note">Limits of these numbers: the mistake is planted in the expected text while the audio is a correct studio recitation, and the clips are from suras 78–114. Real people on phones making real mistakes are harder; that has not been measured for this model yet.</p>
+<div class="wrap"><table>
+<tr><th>Existing approaches on 911 real learner recordings</th><th class="n">Separation</th><th class="n">Caught at 5% false flags</th></tr>
+<tr><td>Arabic speech model, transcribe and compare text</td><td class="n">0.61</td><td class="n">14%</td></tr>
+<tr><td>Open Quran Whisper model, transcribe and compare text</td><td class="n">0.68</td><td class="n">6%</td></tr>
+<tr><td>Sound-level scoring with an existing expert-only model</td><td class="n">0.73</td><td class="n">15%</td></tr>
+</table></div>
+<p class="note">Separation is 0.5 for a coin flip and 1.0 for perfect. This learner set is a different and harder test with noisy labels, so it is not comparable with the tables above. It shows the gap that stages 3 and 4 have to close.</p>
+
+<h2><span>08</span>Labelling</h2>
+<p>Every labelled clip stores what should have been said and what was said, the same pairing the strongest published systems train on. The tool runs on the labeller's own computer and nothing leaves it.</p>
+<pre>{
+  "sura": 112, "aya": 1, "reciter": "r01",
+  "clip_kind": "usable",            // or incomplete, different ayah, several ayahs, noise
+  "verdict": "mistake",
+  "marks": [ { "word": 3, "text": "أَحَدٌ", "type": "letter", "heard": "أهد" } ],
+  "sites": [ { "kind": "qalqalah", "group": 3, "heard": "as expected" } ],
+  "expected_tokens": ["ق","ُ","ل","ه","ُ","و","َ","ل2","َ","ا2","ه","ُ","ء","َ","ح","َ","د","ڇ"]
+}</pre>
+<div class="wrap"><table>
+<tr><th>Practice</th><th>Why</th></tr>
+<tr><td>Half the clips correct, half with a mistake</td><td>False flags can only be measured on correct recitation</td></tr>
+<tr><td>A reciter code on every clip</td><td>Results are split and resampled by reciter, never by clip</td></tr>
+<tr><td>Unusable clips get their own class</td><td>A cut-off recording is not a recitation mistake</td></tr>
+<tr><td>Tajweed marked at named places with a measured length</td><td>"Madd 6 heard as 4" can train a model; "tajweed wrong" cannot</td></tr>
+<tr><td>Some clips labelled twice, blind</td><td>Agreement between the two passes is the ceiling for any score</td></tr>
+</table></div>
+
+<h2><span>09</span>Commands</h2>
+<pre>python labeler/server.py                                   # labelling tool on localhost:8765
+python eval/evaluate.py --ckpt best.pt --sessions data/sessions   # score a model on labelled clips
+python eval/evaluate.py --ckpt best.pt --shards FILES             # score with planted mistakes
+python data_tools/phone_filter.py --ckpt best.pt --shards FILES   # score phone recordings
+train/kaggle_pilot.ipynb, train/kaggle_full.ipynb          # training, on a Kaggle GPU session</pre>
+
+<h2><span>10</span>Data and licence position</h2>
+<p>The trained model contains NVIDIA's Arabic checkpoint (credit required) and an openly licensed set of expert recitations. Nothing with a non-commercial or share-alike licence has been used, so the licence of the model stays a free choice as long as credits are kept. Datasets whose licences would dictate the model's own licence are excluded. Credits are listed in the repository.</p>
+</main>
+</body>
+</html>
