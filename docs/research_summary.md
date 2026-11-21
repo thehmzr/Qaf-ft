@@ -156,3 +156,28 @@ Reading: dropping tajweed detail does not lower the flags. At 1% it flags more, 
 threshold falls further on studio audio than the scores do on phone audio. Strong flags stay the
 same (21% vs 22%): the words that fail clearly fail on letters and vowels, not on lengths. The gap
 is acoustic, which points to the phone fine-tune. One labeller, small sample.
+
+## Other word scores on planted mistakes (segment-free GOP, competing-token margin)
+Same protocol as eval/evaluate.py --shards on the two held-out reciters (one shard each, suras
+78-114, 200 clips each: 1,343 correct words, 400 planted mistakes). Scripts: eval/wordscores.py,
+eval/wordscores_report.py; raw scores in data/eval/wordscores/. Thresholds come from the same
+correct words (in-sample), so catch rates are optimistic for every score alike.
+
+| Score | AUC | Catch at 1% | Catch at 0.1% |
+|---|---|---|---|
+| current (weakest sound, extra sound) | 1.000 | 99.5% | 95.3% |
+| segment-free GOP | 0.964 | 81.0% | 51.0% |
+| competing-token margin | 0.955 | 91.0% | 90.5% |
+| max of rank-normalised current, GOP, margin | 1.000 | 99.5% | 96.0% |
+
+By kind at 1%, GOP: vowel 1.00, ghunnah 0.93, letter 0.89, madd 0.65, doubling 0.56, qalqalah 0.00.
+Margin behaves like the weakest-sound score (madd 0.70, qalqalah 0.00). Words-and-vowels mode
+(to_basic): current 100% / 99.4%, GOP 82.9% / 51.1%, margin 91.9% / 91.3%.
+Reading: GOP and margin only ask whether the expected sounds are the best explanation; the
+current score's extra-sound check is what catches madd and qalqalah, and on its own extra sound
+catches only 10%. GOP's one-token edits miss doubling and length changes, which a CTC model
+can explain without a better single edit. Combining adds 3 words of 400 at 0.1%, within noise.
+Keep the current score in the verifier.
+On the long correct recitation in a new voice (sura 2, thresholds from the first half, test on
+the second), false flags at the 1% / 0.1% thresholds: GOP 0.75% / 0.31% tajweed judged and
+0.82% / 0.10% words and vowels; current 0.85% / 0.03% and 1.02% / 0.20%. No clear gain.
