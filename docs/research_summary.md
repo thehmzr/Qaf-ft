@@ -107,3 +107,10 @@ Update: with the extra-sound check added and both held-out reciters (800 clips):
 caught at 5% / 1% / 0.1% false flags: 99.4% / 97.0% / 82.5%. By kind at 1%: letter 1.00,
 vowel 1.00, doubling 1.00, ghunnah 0.99, madd 0.91, qalqalah 0.88. Intervals from two reciters
 are not meaningful. Same limits as above: planted in the text, expert studio audio, Juz Amma.
+
+## Full run (all suras, expert set, 30,000 steps, about 9 hours on one Kaggle GPU)
+Token error on the two held-out reciters (first and last shard of each, 5,201 segments): 0.43%.
+Best validation 0.18% (step 19,000); validation swung between 0.2% and 1.5% from check to check.
+Checker on the same 800 held-out Juz Amma clips as the pilot (planted mistakes): AUC 0.999;
+caught at 5% / 1% / 0.1% false flags: 99.9% / 98.3% / 92.1% (pilot: 99.4 / 97.0 / 82.5).
+By kind at 1%: letter, vowel, doubling, ghunnah 1.00; madd 0.97; qalqalah 0.84.
