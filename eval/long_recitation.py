@@ -77,7 +77,7 @@ def main():
     ap.add_argument("--out", default=None)
     a = ap.parse_args()
     meta = json.load(open(os.path.join(a.dir, "pieces.json")))
-    tokens = json.load(open(os.path.join(ROOT, "qafft", "vocab.json")))["tokens"]
+    tokens = meta.get("tokens") or json.load(open(os.path.join(ROOT, "qafft", "vocab.json")))["tokens"]
     vocab = {t: i for i, t in enumerate(tokens)}; blank = len(tokens)
     ref_toks, ref_words = sura_stream(meta["sura"])
     first_at, last_at = {}, {}
@@ -128,8 +128,9 @@ def main():
         i0 = at[to_word(*p["words"][0], 0)]
         i1 = at[to_word(*p["words"][1], 1)]
         best = None
-        for d0 in (0, -1, 1, -2, 2):          # smallest shift first, so it wins ties
-            for d1 in (0, -1, 1, -2, 2):
+        shifts = sorted(((d0, d1) for d0 in range(-2, 3) for d1 in range(-2, 3)), key=lambda d: abs(d[0]) + abs(d[1]))
+        for d0, d1 in shifts:                  # smallest shift first, so it wins ties
+            if True:
                 a0, a1 = i0 + d0, i1 + d1
                 if a0 < 0 or a1 >= len(order) or a1 < a0:
                     continue
@@ -158,12 +159,17 @@ def main():
             words.append(dict(piece=p["i"], half=half, ayah=inv[j][0], group=inv[j][1],
                               full=full.get(j, 0.0), basic=basic.get(j, 0.0)))
 
-    real = [w for w in words if w["ayah"] > 0]          # leave the basmala out of the numbers
+    seen_w, real = set(), []
+    for w in words:                                      # one row per printed word; basmala left out
+        if w["ayah"] > 0 and (w["ayah"], w["group"]) not in seen_w:
+            seen_w.add((w["ayah"], w["group"])); real.append(w)
     thr_rows = [w for w in real if w["half"] == "thr"]
     test_rows = [w for w in real if w["half"] == "test"]
     print(f"scored words: {len(real)} ({len(thr_rows)} threshold half, {len(test_rows)} test half); "
           f"pieces too short to align: {n_short}; skipped (no word span): {n_split}; "
           f"word span moved after checking: {moved}; candidate spans with tokens outside the vocabulary: {dict(oov)}")
+    if len(thr_rows) < 100 or len(test_rows) < 100:
+        raise SystemExit(f"too few scored words to split ({len(thr_rows)} / {len(test_rows)})")
     sets = {}
     for mode in ("full", "basic"):
         v = np.array([w[mode] for w in thr_rows])

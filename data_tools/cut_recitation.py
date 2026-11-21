@@ -41,6 +41,8 @@ def split_at_pauses(wav, min_sil=0.3, min_piece=1.0, max_piece=25.0, hop=0.01, w
     """Cut points in the middle of pauses. The silence level is set from this recording:
     a third of the way from its quiet floor to its speech level, in dB."""
     h, w = int(hop * 16000), int(win * 16000)
+    if len(wav) < w + h:
+        return [(0, len(wav))], {}
     n = 1 + max(0, (len(wav) - w) // h)
     frames = np.lib.stride_tricks.sliding_window_view(wav, w)[::h][:n]
     db = 10 * np.log10((frames ** 2).mean(1) + 1e-10)
@@ -134,7 +136,7 @@ def main():
     ref_b, ref_pos = [], []
     for i, t in enumerate(ref_ids):
         c = cls[t]
-        if c is None or (ref_b and ref_b[-1] == c and ref_pos[-1] == i - 1):
+        if c is None or (ref_b and ref_b[-1] == c):    # same rule as the decoded side
             continue
         ref_b.append(c); ref_pos.append(i)
     as_text = lambda seq: "".join(chr(0x4E00 + c) for c in seq)
@@ -185,11 +187,13 @@ def main():
             hs = as_text(hb)
             m = best_span(hs, ptr - 5, ptr + len(hb) + a.ahead)
             how = "ahead"
+            back = best_span(hs, ptr - 3 * len(hb) - a.ahead, ptr + 5)
+            # a phrase said again can also appear further ahead: keep the closer, better match
+            if back and back[0] <= a.accept and (m is None or back[0] < m[0]
+                                                 or (back[0] == m[0] and ptr - back[2] < m[1] - ptr)):
+                m, how = back, "repeat"
             if m is None or m[0] > a.accept:
-                back = best_span(hs, ptr - 3 * len(hb) - a.ahead, ptr + 5)
-                if back and back[0] <= a.accept:
-                    m, how = back, "repeat"
-                elif fails >= 2:
+                if fails >= 2:
                     anywhere = best_span(hs, 0, len(ref_s))
                     if anywhere and anywhere[0] <= a.accept:
                         m, how = anywhere, "re-anchored"
@@ -204,7 +208,9 @@ def main():
             first, last = word_of[ns], word_of[ne - 1]
             p.update(status="matched", how=how, mismatch=round(d, 3), snap_moved=moved,
                      words=[list(first), list(last)], ref=[ns, ne])
-            if how != "repeat":
+            if how == "re-anchored":
+                ptr = ne                 # the pointer had drifted; trust the fresh anchor
+            elif how != "repeat":
                 ptr = max(ptr, ne)
             pieces.append(p)
             if k % 50 == 0:
@@ -224,13 +230,13 @@ def main():
     status = {}
     for p in pieces:
         status[p["status"]] = status.get(p["status"], 0) + 1
-    rep = (f"pieces: {status}\nwords covered exactly once: {once} of {len(real)} ({once / len(real):.1%})\n"
+    rep = (f"pieces: {status}\nsound groups covered exactly once: {once} of {len(real)} ({once / len(real):.1%})\n"
            f"gaps: {len(gaps)} words, e.g. {gaps[:15]}\ncovered more than once: {len(multi)}, e.g. {multi[:15]}\n"
            f"repeats: {sum(1 for p in pieces if p.get('how') == 'repeat')}, "
            f"re-anchored: {sum(1 for p in pieces if p.get('how') == 're-anchored')}\nlevels: {levels}\n")
     print(rep, flush=True)
     open(os.path.join(a.out, "coverage.txt"), "w").write(rep)
-    json.dump(dict(sura=a.sura, ckpt=os.path.basename(a.ckpt), pieces=pieces, ref_len=len(ref_s)),
+    json.dump(dict(sura=a.sura, ckpt=os.path.basename(a.ckpt), tokens=tokens, pieces=pieces, ref_len=len(ref_s)),
               open(os.path.join(a.out, "pieces.json"), "w"), indent=1)
 
 

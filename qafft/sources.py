@@ -12,6 +12,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def hub_id(label):
     path = os.environ.get("QAF_SOURCES") or os.path.join(ROOT, "data", "sources.json")
     try:
-        return json.load(open(path))["datasets"][label]
-    except (OSError, KeyError) as e:
+        with open(path) as f:
+            return json.load(f)["datasets"][label]
+    except (OSError, KeyError, ValueError) as e:
         raise SystemExit(f"no id for '{label}' in {path}: put the sources file there (see docs/handover.md)") from e

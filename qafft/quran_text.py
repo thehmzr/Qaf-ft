@@ -1,7 +1,6 @@
 """The Uthmani text used for display and tajweed colouring.
 
-Same file and same pinned version the mobile app downloads
-(fawazahmed0/quran-api, edition ara-quranuthmanihaf, Unlicense), so the tool and the
+Same file and same pinned version the mobile app downloads (see URLS), so the tool and the
 app show identical text. Fetch it once with:  python -m qafft.quran_text
 """
 import hashlib, json, os, re, sys, urllib.request

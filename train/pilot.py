@@ -20,9 +20,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 from qafft.phonetic import fold
 
-from qafft.sources import hub_id
-
-BASE = hub_id("base")
+BASE = "base"                       # label in data/sources.json, looked up when needed
 TEST_MOSHAF = {"5.0", "13.0"}      # never trained on
 VAL_MOSHAF = {"19.0"}
 FIRST_SURA = 78
@@ -90,7 +88,7 @@ class QafModel(nn.Module):
         super().__init__()
         import nemo.collections.asr as nemo_asr
         m = (nemo_asr.models.ASRModel.restore_from(base_path, map_location="cpu") if base_path
-             else nemo_asr.models.ASRModel.from_pretrained(BASE, map_location="cpu"))
+             else nemo_asr.models.ASRModel.from_pretrained(__import__("qafft.sources", fromlist=["hub_id"]).hub_id(BASE), map_location="cpu"))
         self.pre, self.enc, self.spec = m.preprocessor, m.encoder, m.spec_augmentation
         d = self.enc.d_model if hasattr(self.enc, "d_model") else 512
         self.up = nn.ConvTranspose1d(d, d, kernel_size=2, stride=2)   # 12.5 -> 25 frames/s
