@@ -91,3 +91,38 @@ Kaggle (84 hits read, 12 descriptions read):
 Zenodo: nothing with mistake labels; 5879098 "Qur'anic Recitation Styles and Reciters" (27 GB, CC-BY) is style classification.
 Mendeley: Surah Al-Ikhlas Error Detection Dataset confirmed at source: 1,506 records, labelled by 5 Quran experts, CC BY 4.0.
 Still true: no dataset with word-located real mistakes across the full Quran.
+
+## Pilot model as a checker (planted mistakes, one held-out reciter, Juz Amma)
+Command: eval/evaluate.py on 400 clips of a reciter never trained on. Each clip scored against
+its true text and against a text with one planted mistake (text-side, audio unchanged).
+Separation (AUC) 0.942. Wrong words caught at 5% / 1% / 0.1% false flags: 87.5% / 86.3% / 79.0%.
+By kind at 1% false flags: letter 1.00, vowel 1.00, doubling 1.00, ghunnah 0.97, madd 0.68,
+qalqalah 0.00.
+Limits: one reciter, so no interval; mistakes are planted in the text, which is easier than real
+mistakes; expert studio audio. Qalqalah scores zero because the planted mistake removes an
+expected sound, and alignment scoring cannot see a sound that is present in the audio but absent
+from the expected text. Needs a second check against the free decode.
+
+Update: with the extra-sound check added and both held-out reciters (800 clips): AUC 0.998;
+caught at 5% / 1% / 0.1% false flags: 99.4% / 97.0% / 82.5%. By kind at 1%: letter 1.00,
+vowel 1.00, doubling 1.00, ghunnah 0.99, madd 0.91, qalqalah 0.88. Intervals from two reciters
+are not meaningful. Same limits as above: planted in the text, expert studio audio, Juz Amma.
+
+## Full run (all suras, expert set, 30,000 steps, about 9 hours on one Kaggle GPU)
+Token error on the two held-out reciters (first and last shard of each, 5,201 segments): 0.43%.
+Best validation 0.18% (step 19,000); validation swung between 0.2% and 1.5% from check to check.
+Checker on the same 800 held-out Juz Amma clips as the pilot (planted mistakes): AUC 0.999;
+caught at 5% / 1% / 0.1% false flags: 99.9% / 98.3% / 92.1% (pilot: 99.4 / 97.0 / 82.5).
+By kind at 1%: letter, vowel, doubling, ghunnah 1.00; madd 0.97; qalqalah 0.84.
+
+## First hand-labelled phone clips (67 of batch 1, labelled without seeing model suggestions)
+Batch 1 drew 85 clips the model scored as "right length, 10-50% of sounds differ" and 15 it scored perfect.
+Of 60 labelled from the first group: 32 unusable (24 incomplete, 5 different ayah, 3 noise),
+25 correct, 3 with a mistake. Of 7 labelled controls: 7 correct.
+On the 25 clips judged correct, the checker (threshold set on studio reciters) flagged 48 of 95
+words (51%), 18 strongly (19%). On the 7 controls it flagged 1 of 26 words, none strongly.
+The 3 mistake clips: one vowel changed, one sound dropped, one with short ghunnah and madd; the
+checker flagged the marked word in 2 of the 2 clips that had a word mark, among other words.
+Reading: on phone audio the model's mismatch score does not separate incomplete clips, correct
+recitation it mishears, and real mistakes (median mismatch 0.21 vs 0.22). The gap is phone audio,
+not the checker logic. Small sample; one labeller; no second pass yet.

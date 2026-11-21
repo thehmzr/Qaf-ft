@@ -1,0 +1,7 @@
+quran-transcript
+rapidfuzz
+pyarrow
+soundfile
+torch
+torchaudio
+nemo_toolkit[asr]

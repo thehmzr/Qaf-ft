@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Qaf-ft labelling</title>
+<link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* layout: one column; the ayah is the stage, everything else is a tool around it */
+  --paper:#f3f1ea;--surface:#fffdf8;--ink:#1c2422;--muted:#66706c;--line:#ddd8ca;
+  --accent:#0b6e6a;--soft:#d9eeec;--crit:#b3261e;--critsoft:#fbe3df;--good:#1d7a45;--goodsoft:#dcf1e3;
+  --ar:"Amiri Quran","Amiri","Scheherazade New","Traditional Arabic",serif;
+  --ui:"IBM Plex Sans",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font:15px/1.45 var(--ui);padding-bottom:96px}
+main{max-width:900px;margin:0 auto;padding:18px 16px;display:flex;flex-direction:column;gap:14px}
+header{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+h1{font-size:20px;margin:0;font-weight:600}
+.tally{margin-left:auto;display:flex;gap:8px;font-size:13px;font-variant-numeric:tabular-nums}
+.tally span{padding:3px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--line)}
+.tally .ok{color:var(--good)} .tally .bad{color:var(--crit)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+h2{font-size:12px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0 0 8px;font-weight:600}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+label{font-size:13px;color:var(--muted)}
+select,input[type=number],input[type=text]{font:inherit;padding:6px 9px;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink)}
+button{font:inherit;font-size:14px;padding:6px 13px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:disabled{opacity:.4;cursor:default}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+kbd{font:11px var(--ui);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;color:var(--muted);background:var(--paper)}
+/* the ayah */
+.stage{padding:22px 18px 16px}
+.ayah{direction:rtl;font-family:var(--ar);font-size:38px;line-height:2.3;display:flex;flex-wrap:wrap;gap:4px 6px;justify-content:center}
+.word{font:inherit;padding:0 8px;border-radius:10px;border:2px solid transparent;background:none;color:var(--ink);position:relative}
+.word:hover{background:var(--paper)}
+.word.sel{border-color:var(--accent);background:var(--soft)}
+.word.prop{border-color:#c98a00;border-style:dashed;background:#fff4d6}
+.word.rej{border-color:var(--good);border-style:dashed}
+.word.bad{background:var(--critsoft);border-color:var(--crit)}
+.word .tag.q{background:#c98a00}.word .tag.ok{background:var(--good)}
+.word.bad.sel{box-shadow:0 0 0 3px var(--soft)}
+.word .tag{position:absolute;left:50%;bottom:-4px;transform:translateX(-50%);font:600 10px var(--ui);background:var(--crit);color:#fff;border-radius:999px;padding:1px 7px;white-space:nowrap;direction:ltr}
+.plain .word span{color:inherit!important}
+.legend{display:flex;gap:6px 12px;flex-wrap:wrap;justify-content:center;margin-top:10px;font-size:12px;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:middle}
+.hint{text-align:center;color:var(--muted);font-size:13px;margin:8px 0 0}
+/* tray for the selected word */
+.tray{border-top:1px dashed var(--line);margin-top:14px;padding-top:12px;display:flex;flex-direction:column;gap:10px}
+.tray b{font-family:var(--ar);font-size:26px;direction:rtl}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border-radius:999px;padding:5px 12px;font-size:13px}
+.chip.on{background:var(--crit);border-color:var(--crit);color:#fff}
+.chip.on.neutral,.seg .on{background:var(--accent);border-color:var(--accent);color:#fff}
+/* recorder */
+.recrow{display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+#rec{width:64px;height:64px;border-radius:50%;border:3px solid var(--crit);background:var(--surface);display:grid;place-items:center;flex:none}
+#rec i{width:26px;height:26px;border-radius:50%;background:var(--crit);transition:border-radius .15s,width .15s,height .15s}
+#rec.live i{border-radius:5px;width:22px;height:22px}
+#rec.live{animation:pulse 1.2s infinite}
+@keyframes pulse{50%{box-shadow:0 0 0 9px var(--critsoft)}}
+@media (prefers-reduced-motion:reduce){#rec.live{animation:none}}
+.meter{flex:1;min-width:160px}
+.meter .bar{height:8px;border-radius:4px;background:var(--line);overflow:hidden}
+.meter .bar i{display:block;height:100%;width:0;background:var(--good)}
+#clock{font-variant-numeric:tabular-nums;font-size:20px;min-width:56px}
+.drop{border:1.5px dashed var(--line);border-radius:10px;padding:8px 12px;font-size:13px;color:var(--muted)}
+.drop.over{border-color:var(--accent);background:var(--soft)}
+audio{width:100%;margin-top:10px}
+.site{display:flex;gap:8px;align-items:center;border:1px solid var(--line);border-radius:10px;padding:4px 6px 4px 10px;font-size:13px}
+.site b{font-family:var(--ar);font-size:20px;direction:rtl}
+.site.off{border-color:var(--crit);background:var(--critsoft)}
+.sounds{display:flex;gap:5px;flex-wrap:wrap;direction:rtl}
+.snd{font:22px var(--ar);min-width:38px;padding:0 8px;line-height:1.9;border-radius:8px}
+.snd.ch{background:var(--critsoft);border-color:var(--crit);color:var(--crit)}
+.snd.del{text-decoration:line-through;opacity:.6}
+.note{font-size:13px;color:var(--muted);margin:6px 0 0;max-width:68ch}
+/* sticky save bar */
+.bar{position:fixed;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:10px 16px}
+.bar .in{max-width:900px;margin:0 auto;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.big{font-size:15px;font-weight:600;padding:10px 18px;border-radius:10px}
+#saveok{background:var(--good);border-color:var(--good);color:#fff}
+#save{background:var(--accent);border-color:var(--accent);color:#fff}
+#status{font-size:14px} #status.ok{color:var(--good)} #status.err{color:var(--crit)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+td,th{border-bottom:1px solid var(--line);padding:5px 8px;text-align:left}
+summary{cursor:pointer;font-weight:600}
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Qaf-ft labelling</h1>
+    <div class="tally"><span id="tTotal">0 clips</span><span class="ok" id="tOk">0 correct</span><span class="bad" id="tBad">0 with mistakes</span></div>
+  </header>
+
+  <div class="card">
+    <div class="row">
+      <button id="prev" title="Previous ayah">&larr;</button>
+      <label for="sura">Sura</label><select id="sura"></select>
+      <label for="aya">Ayah</label><input type="number" id="aya" min="1" value="1" style="width:76px">
+      <button id="next" title="Next ayah">&rarr;</button>
+      <span style="flex:1"></span>
+      <label for="reciter">Reciter code</label><input type="text" id="reciter" placeholder="r01" style="width:84px">
+    </div>
+  </div>
+
+  <div class="card stage">
+    <div class="ayah" id="words"></div>
+    <div class="legend" id="legend"></div>
+    <p class="hint" id="hint">Tap a word that was recited wrongly.</p>
+    <div class="row" id="propbar" hidden style="justify-content:center;margin-top:8px"><span class="note" style="margin:0" id="proptext"></span><button id="rejectAll">None of these are mistakes</button></div>
+    <div class="tray" id="tray" hidden>
+      <div class="row"><b id="trayWord"></b><span class="note" style="margin:0">What went wrong?</span><span style="flex:1"></span><button id="clearWord">Not a mistake</button></div>
+      <div class="row"><span class="note" style="margin:0">Its sounds (tap one to change what was said):</span></div>
+      <div class="sounds" id="traySounds"></div>
+      <div class="chips" id="trayChips"></div>
+      <div class="row"><label for="heard">What was said (optional)</label><input type="text" id="heard" style="direction:rtl;width:220px"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Recitation</h2>
+    <div class="recrow">
+      <button id="rec" aria-label="Start recording"><i></i></button>
+      <span id="clock">0:00</span>
+      <div class="meter"><div class="bar"><i id="level"></i></div><p class="note" id="recnote">Press the red button or <kbd>R</kbd> to record. Saved on this computer only.</p></div>
+      <button id="queue">Next clip from the batch</button>
+      <label class="drop" id="drop" for="file">Or drop an audio file here<input type="file" id="file" accept="audio/*" hidden></label>
+    </div>
+    <audio id="player" controls hidden></audio>
+  </div>
+
+  <div class="card">
+    <h2>Tajweed places in this ayah</h2>
+    <div class="row" id="sites"></div>
+    <div class="row" style="margin-top:8px"><input type="checkbox" id="natural"><label for="natural">Show natural 2-count madd too</label><span style="flex:1"></span><input type="checkbox" id="colours" checked><label for="colours">Tajweed colours</label></div>
+  </div>
+
+  <div class="card">
+    <h2>Is the clip usable?</h2>
+    <div class="chips seg" id="kinds"></div>
+  </div>
+
+  <details class="card"><summary>Consistency check</summary>
+    <div class="row" style="margin-top:10px"><button id="control">Label an earlier clip again</button><span id="ctl" class="note" style="margin:0"></span></div>
+    <p class="note" id="stats">Loads one of the earlier clips without showing its first label. Agreement between the two labellings shows how steady the labels are.</p>
+  </details>
+  <details class="card"><summary>Saved clips</summary><div id="list" style="margin-top:10px"></div></details>
+  <p class="note">Keys: <kbd>R</kbd> record or stop · <kbd>Space</kbd> play · <kbd>1</kbd>–<kbd>9</kbd> kind of mistake for the selected word · <kbd>Esc</kbd> close the word · <kbd>Enter</kbd> save · <kbd>N</kbd> / <kbd>P</kbd> next or previous ayah · <kbd>Q</kbd> next clip from the batch</p>
+</main>
+
+<div class="bar"><div class="in">
+  <button id="saveok" class="big" disabled>Correct recitation: save and next</button>
+  <button id="save" class="big" disabled>Save with marks and next</button>
+  <span id="status"></span>
+</div></div>
+
+<script>
+(function(){
+  var $=function(i){return document.getElementById(i)};
+  var meta=null, ayah=null, marks={}, sel=null, wav=null, siteVal={}, kind="usable", repeatOf=null, source=null, props={}, blind=false;
+  var recorder=null, chunks=[], t0=0, tick=null, actx=null, analyser=null;
+  function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+  function status(t,k){var s=$("status");s.textContent=t;s.className=k||""}
+  function offSites(){return Object.keys(siteVal).filter(function(i){return siteVal[i]!=="as expected"}).length}
+  function undecided(){return Object.keys(props).filter(function(i){return !props[i].decision}).length}
+  function refresh(){
+    var n=Object.keys(marks).length+offSites(), clean=n===0&&kind==="usable";
+    var u=undecided(), np=Object.keys(props).length;
+    $("propbar").hidden=!np;
+    if(np)$("proptext").textContent=u?"The model suggests "+np+" word"+(np===1?"":"s")+" (dashed). "+u+" still to decide: tap each one.":"All suggestions decided.";
+    $("rejectAll").hidden=!u;
+    var hold=u>0&&kind==="usable";
+    $("saveok").disabled=!(ayah&&wav&&clean)||hold;
+    $("save").disabled=!(ayah&&wav&&!clean)||hold;
+    $("save").textContent=kind!=="usable"?"Save as unusable and next":"Save with "+n+" mark"+(n===1?"":"s")+" and next";
+    $("hint").hidden=sel!==null;
+  }
+  function colourMap(){var m={};meta.rules.forEach(function(r){m[r.id]=r.colour});return m}
+  function drawWords(){
+    var cm=colourMap();
+    $("words").className="ayah"+($("colours").checked?"":" plain");
+    $("words").innerHTML=ayah.coloured.map(function(parts,i){
+      var inner=parts.map(function(p){return p[1]?'<span style="color:'+cm[p[1]]+'">'+esc(p[0])+'</span>':esc(p[0])}).join("");
+      var pr=props[i], cls=marks[i]?' bad':pr&&!pr.decision?' prop':pr&&pr.decision==="rejected"?' rej':'';
+      var tag=marks[i]?'<span class="tag">'+esc(marks[i].type)+'</span>':pr&&!pr.decision?'<span class="tag q">'+(pr.strength==="strong"?"model: likely":"model: maybe")+'</span>':pr&&pr.decision==="rejected"?'<span class="tag ok">fine</span>':'';
+      return '<button class="word'+cls+(sel===i?' sel':'')+'" data-i="'+i+'">'+inner+tag+'</button>'}).join("");
+    var t=$("tray");t.hidden=sel===null;
+    if(sel!==null){
+      $("trayWord").textContent=ayah.words[sel];
+      $("trayChips").innerHTML=meta.mistakes.map(function(m,k){return '<button class="chip'+(marks[sel]&&marks[sel].type===m?' on':'')+'" data-m="'+esc(m)+'"><kbd>'+(k+1)+'</kbd> '+esc(m)+'</button>'}).join("");
+      $("heard").value=marks[sel]?marks[sel].heard||"":"";
+      var ed=(marks[sel]&&marks[sel].sounds)||{};
+      $("traySounds").innerHTML=(ayah.sounds[sel]||[]).map(function(x){var e=ed[x.pos];
+        var shown=e===undefined?x.t:(e.now===null?x.t:e.now);
+        return '<button class="snd'+(e!==undefined?' ch':'')+(e&&e.now===null?' del':'')+'" data-pos="'+x.pos+'" title="'+(x.alts.length?'Tap to change':'No common mistake for this sound; tap to mark it not said')+'">'+esc(shown)+'</button>'}).join("");
+    }
+    refresh();
+  }
+  function setMistake(m){if(sel===null)return;marks[sel]={type:m,heard:marks[sel]?marks[sel].heard:"",sounds:marks[sel]?marks[sel].sounds:undefined};if(props[sel])props[sel].decision="confirmed";drawWords()}
+  $("rejectAll").onclick=function(){Object.keys(props).forEach(function(i){if(!props[i].decision)props[i].decision="rejected"});drawWords()};
+  $("words").addEventListener("click",function(e){var b=e.target.closest(".word");if(!b)return;var i=+b.dataset.i;sel=sel===i?null:i;drawWords()});
+  $("trayChips").addEventListener("click",function(e){var b=e.target.closest(".chip");if(b)setMistake(b.dataset.m)});
+  $("traySounds").addEventListener("click",function(e){var b=e.target.closest(".snd");if(!b||sel===null)return;
+    var pos=+b.dataset.pos,x=ayah.sounds[sel].filter(function(y){return y.pos===pos})[0];
+    // cycle: as written -> each common mistake -> not said -> as written
+    var seq=x.alts.filter(function(a){return a.now!==null}).concat([{now:null,kind:"skipped"}]);
+    var m=marks[sel]||{type:meta.mistakes[0],heard:""};m.sounds=m.sounds||{};
+    var cur=m.sounds[pos],k=cur===undefined?-1:seq.map(function(a){return a.now}).indexOf(cur.now);
+    if(k+1>=seq.length){delete m.sounds[pos]}else{m.sounds[pos]={now:seq[k+1].now,was:x.t};m.type=seq[k+1].kind}
+    if(!Object.keys(m.sounds).length&&!marks[sel]){drawWords();return}
+    marks[sel]=m;if(!Object.keys(m.sounds).length)delete m.sounds;if(props[sel])props[sel].decision="confirmed";drawWords()});
+  $("clearWord").onclick=function(){if(sel!==null){delete marks[sel];if(props[sel])props[sel].decision="rejected";sel=null;drawWords()}};
+  $("heard").oninput=function(){if(sel!==null&&marks[sel])marks[sel].heard=this.value};
+  function siteOptions(x){return x.kind==="madd"?["as expected","1 count","2 counts","3 counts","4 counts","5 counts","6 counts","longer than 6"]:["as expected","missing","too short","too long"]}
+  function drawSites(){
+    var show=ayah.sites.map(function(x,i){return {x:x,i:i}}).filter(function(o){return $("natural").checked||!(o.x.kind==="madd"&&o.x.counts===2)});
+    $("sites").innerHTML=show.length?show.map(function(o){var x=o.x,i=o.i,v=siteVal[i]||"as expected";
+      var name=x.kind==="madd"?"Madd "+x.counts:x.kind==="ghunnah"?"Ghunnah":"Qalqalah";
+      return '<div class="site'+(v!=="as expected"?' off':'')+'"><b>'+esc(ayah.wordOfGroup?ayah.words[x.group]:x.text)+'</b><label for="s'+i+'">'+name+'</label><select id="s'+i+'" data-s="'+i+'">'+siteOptions(x).map(function(o2){return '<option'+(v===o2?' selected':'')+'>'+o2+'</option>'}).join("")+'</select></div>'}).join(""):'<span class="note" style="margin:0">No lengthened madd, ghunnah or qalqalah here.</span>';
+  }
+  $("sites").addEventListener("change",function(e){if(e.target.dataset.s){siteVal[+e.target.dataset.s]=e.target.value;drawSites();refresh()}});
+  $("natural").onchange=function(){if(ayah)drawSites()};
+  $("colours").onchange=function(){if(ayah)drawWords()};
+  function drawKinds(){$("kinds").innerHTML=meta.clip_kinds.map(function(k){return '<button class="chip'+(kind===k?' on':'')+'" data-k="'+esc(k)+'">'+esc(k)+'</button>'}).join("")}
+  $("kinds").addEventListener("click",function(e){var b=e.target.closest(".chip");if(b){kind=b.dataset.k;drawKinds();refresh()}});
+  async function loadAyah(){
+    var s=+$("sura").value,a=+$("aya").value,max=meta.sizes[s-1];
+    if(!(a>=1&&a<=max)){a=Math.min(Math.max(1,a||1),max);$("aya").value=a}
+    $("aya").max=max;
+    ayah=await (await fetch("/ayah?s="+s+"&a="+a)).json();
+    ayah.wordOfGroup=ayah.sites.every(function(x){return x.group<ayah.words.length});
+    marks={};sel=null;siteVal={};kind="usable";props={};blind=false;drawWords();drawSites();drawKinds();
+  }
+  function step(d){var s=+$("sura").value,a=+$("aya").value+d;
+    if(a>meta.sizes[s-1]){s=s<114?s+1:1;a=1}else if(a<1){s=s>1?s-1:114;a=meta.sizes[s-1]}
+    $("sura").value=s;$("aya").value=a;return loadAyah()}
+  $("sura").onchange=function(){$("aya").value=1;loadAyah()};
+  $("aya").onchange=loadAyah;$("next").onclick=function(){step(1)};$("prev").onclick=function(){step(-1)};
+  // audio: anything in, 16 kHz mono WAV out
+  async function toWav(blob){
+    var AC=window.AudioContext||window.webkitAudioContext,ctx=new AC();
+    var buf=await ctx.decodeAudioData(await blob.arrayBuffer());ctx.close();
+    var n=Math.ceil(buf.duration*16000),off=new OfflineAudioContext(1,n,16000),src=off.createBufferSource();
+    src.buffer=buf;src.connect(off.destination);src.start();
+    var out=(await off.startRendering()).getChannelData(0),dv=new DataView(new ArrayBuffer(44+out.length*2));
+    function w(o,s){for(var i=0;i<s.length;i++)dv.setUint8(o+i,s.charCodeAt(i))}
+    w(0,"RIFF");dv.setUint32(4,36+out.length*2,true);w(8,"WAVEfmt ");dv.setUint32(16,16,true);dv.setUint16(20,1,true);dv.setUint16(22,1,true);
+    dv.setUint32(24,16000,true);dv.setUint32(28,32000,true);dv.setUint16(32,2,true);dv.setUint16(34,16,true);w(36,"data");dv.setUint32(40,out.length*2,true);
+    for(var i=0;i<out.length;i++){var v=Math.max(-1,Math.min(1,out[i]));dv.setInt16(44+i*2,v<0?v*32768:v*32767,true)}
+    return new Blob([dv.buffer],{type:"audio/wav"});
+  }
+  async function setAudio(blob){
+    try{wav=await toWav(blob);var p=$("player");p.src=URL.createObjectURL(wav);p.hidden=false;status("")}
+    catch(e){wav=null;status("That audio could not be read. Try a WAV or MP3 file.","err")}
+    refresh();
+  }
+  function clearAudio(){wav=null;$("player").hidden=true;$("file").value="";$("clock").textContent="0:00";$("level").style.width="0"}
+  $("file").onchange=function(e){if(e.target.files[0])setAudio(e.target.files[0])};
+  var drop=$("drop");
+  ["dragover","dragenter"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.add("over")})});
+  ["dragleave","drop"].forEach(function(ev){drop.addEventListener(ev,function(e){e.preventDefault();drop.classList.remove("over")})});
+  drop.addEventListener("drop",function(e){if(e.dataTransfer.files[0])setAudio(e.dataTransfer.files[0])});
+  async function toggleRec(){
+    if(recorder){recorder.stop();return}
+    var stream;
+    try{stream=await navigator.mediaDevices.getUserMedia({audio:true})}
+    catch(e){$("recnote").textContent="The microphone is blocked. Allow it for this page in the browser's site settings, or drop a file instead.";return}
+    chunks=[];recorder=new MediaRecorder(stream);
+    actx=new (window.AudioContext||window.webkitAudioContext)();analyser=actx.createAnalyser();analyser.fftSize=512;
+    actx.createMediaStreamSource(stream).connect(analyser);
+    var data=new Uint8Array(analyser.fftSize);t0=Date.now();
+    tick=setInterval(function(){
+      var s=Math.floor((Date.now()-t0)/1000);$("clock").textContent=Math.floor(s/60)+":"+("0"+s%60).slice(-2);
+      analyser.getByteTimeDomainData(data);var m=0;for(var i=0;i<data.length;i++)m=Math.max(m,Math.abs(data[i]-128));
+      $("level").style.width=Math.min(100,m/1.1)+"%";
+    },100);
+    recorder.ondataavailable=function(e){chunks.push(e.data)};
+    recorder.onstop=function(){clearInterval(tick);stream.getTracks().forEach(function(t){t.stop()});actx.close();recorder=null;
+      $("rec").classList.remove("live");$("rec").setAttribute("aria-label","Start recording");$("level").style.width="0";setAudio(new Blob(chunks))};
+    recorder.start();$("rec").classList.add("live");$("rec").setAttribute("aria-label","Stop recording");
+  }
+  $("rec").onclick=toggleRec;
+  async function save(){
+    if(!(ayah&&wav))return;
+    var list=Object.keys(marks).map(Number).sort(function(a,b){return a-b}).map(function(i){var sn=marks[i].sounds||{};return {word:i,text:ayah.words[i],type:marks[i].type,heard:marks[i].heard,
+        sounds:Object.keys(sn).map(function(p){return {pos:+p,was:sn[p].was,now:sn[p].now}})}});
+    var sites=ayah.sites.map(function(x,i){return {kind:x.kind,group:x.group,expected:x.counts||null,heard:siteVal[i]||"as expected"}});
+    var label={sura:ayah.sura,aya:ayah.aya,words:ayah.words,reciter:$("reciter").value.trim(),clip_kind:kind,
+      verdict:kind!=="usable"?"unusable":(list.length||offSites())?"mistake":"correct",marks:list,sites:sites};
+    if(repeatOf)label.repeat_of=repeatOf;
+    if(source){label.source=source;label.blind=blind;
+      label.proposals=Object.keys(props).map(function(i){return {word:+i,strength:props[i].strength,decision:props[i].decision||"undecided"}})}
+    var j=new TextEncoder().encode(JSON.stringify(label)),head=new Uint8Array(4);new DataView(head.buffer).setUint32(0,j.length);
+    $("save").disabled=$("saveok").disabled=true;
+    try{var r=await fetch("/save",{method:"POST",body:new Blob([head,j,wav])});var d=await r.json();if(!r.ok)throw new Error(d.error);
+      var wasRepeat=repeatOf;repeatOf=null;$("ctl").textContent="";clearAudio();
+      status("Saved "+label.sura+":"+label.aya+" as "+label.verdict+".","ok");
+      var fromQueue=source;source=null;
+      if(fromQueue)await nextQueue();else if(wasRepeat)await loadAyah();else await step(1);
+      showList();showStats();
+    }catch(e){status("Not saved: "+e.message,"err");refresh()}
+  }
+  $("save").onclick=save;$("saveok").onclick=save;
+  async function nextQueue(){
+    var d=await (await fetch("/queue")).json();
+    if(d.none){$("recnote").textContent=d.why==="batch finished"?"Batch finished: all "+d.total+" clips are labelled.":"No batch found. Unzip a batch into the data/queue folder.";return}
+    $("sura").value=d.sura;$("aya").value=d.aya;await loadAyah();
+    source=d.file;blind=!!d.blind;props={};
+    if(!blind)(d.proposals||[]).forEach(function(x){var w=Math.min(x.word,ayah.words.length-1);props[w]={strength:x.strength,decision:null}});
+    drawWords();await setAudio(await (await fetch("/queue/audio?file="+encodeURIComponent(d.file))).blob());
+    $("recnote").textContent="Batch clip "+(d.done+1)+" of "+d.total+(blind?". No hints on this one: listen and mark what is wrong.":". Listen, then confirm or reject the model's suggestions and add anything it missed.");
+    var p=$("player");p.play().catch(function(){});
+  }
+  $("queue").onclick=nextQueue;
+  $("control").onclick=async function(){
+    var d=await (await fetch("/control")).json();
+    if(d.none){$("ctl").textContent="Save "+d.need+" more clips first.";return}
+    $("sura").value=d.sura;$("aya").value=d.aya;await loadAyah();
+    repeatOf=d.id;await setAudio(await (await fetch("/audio?id="+encodeURIComponent(d.id))).blob());
+    $("ctl").textContent="Loaded an earlier clip of "+d.sura+":"+d.aya+". Label it as if new.";
+  };
+  async function showStats(){var d=await (await fetch("/stats")).json();
+    if(d.pairs)$("stats").textContent=d.pairs+" clips labelled twice: same verdict on "+Math.round(100*d.same_verdict)+"%, marked words overlap "+Math.round(100*d.word_overlap)+"%."}
+  async function showList(){
+    var d=await (await fetch("/list")).json(),ok=d.filter(function(x){return x.verdict==="correct"}).length,bad=d.filter(function(x){return x.verdict==="mistake"}).length;
+    $("tTotal").textContent=d.length+" clip"+(d.length===1?"":"s");$("tOk").textContent=ok+" correct";$("tBad").textContent=bad+" with mistakes";
+    $("list").innerHTML=d.length?'<table><tr><th>Ayah</th><th>Verdict</th><th>Marked words</th><th>Saved</th></tr>'+d.slice(-12).reverse().map(function(x){return '<tr><td>'+x.sura+':'+x.aya+'</td><td>'+esc(x.verdict)+(x.repeat?' (second pass)':'')+'</td><td>'+x.marks+'</td><td>'+esc(x.saved)+'</td></tr>'}).join("")+'</table>':'<p class="note">Nothing saved yet.</p>';
+  }
+  document.addEventListener("keydown",function(e){
+    var t=e.target.tagName;if(t==="INPUT"||t==="SELECT"||t==="TEXTAREA"){if(e.key==="Escape")e.target.blur();return}
+    if(e.metaKey||e.ctrlKey||e.altKey)return;
+    var k=e.key.toLowerCase();
+    if(k==="r"){e.preventDefault();toggleRec()}
+    else if(k===" "){var p=$("player");if(!p.hidden){e.preventDefault();p.paused?p.play():p.pause()}}
+    else if(k==="enter"){e.preventDefault();save()}
+    else if(k==="q"){nextQueue()}
+    else if(k==="n"){step(1)}else if(k==="p"){step(-1)}
+    else if(k==="escape"){sel=null;drawWords()}
+    else if(sel!==null&&k>="1"&&k<="9"&&meta.mistakes[+k-1]){setMistake(meta.mistakes[+k-1])}
+  });
+  fetch("/meta").then(function(r){return r.json()}).then(function(m){meta=m;
+    $("sura").innerHTML=m.suras.map(function(n,i){return '<option value="'+(i+1)+'">'+(i+1)+'. '+esc(n)+'</option>'}).join("");
+    $("legend").innerHTML=m.rules.map(function(r){return '<span><i style="background:'+r.colour+'"></i>'+esc(r.name)+'</span>'}).join("");
+    loadAyah();showList();showStats()});
+})();
+</script>
+</body>
+</html>
