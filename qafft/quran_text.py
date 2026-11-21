@@ -14,7 +14,7 @@ URLS = [f"https://cdn.jsdelivr.net/gh/fawazahmed0/quran-api@{COMMIT}/editions/ar
 SHA256 = "13a4668ca04e60898ee3922affa62a8a1d1a76d60f6e6f8431718eaa8a0e776d"
 _cache = None
 # this edition writes the alif of a tanween as a separate piece ("كِتَٰبٗ ا"); it belongs to the word before
-_LOOSE = re.compile("^[\u0627\u0649][\u06d6-\u06ed]*$")
+_LOOSE = re.compile("^[\u0627\u0649][\u064b-\u0652\u06d6-\u06ed]*$")
 
 
 def fetch():

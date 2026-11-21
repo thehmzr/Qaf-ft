@@ -221,7 +221,7 @@ summary{cursor:pointer;font-weight:600}
     var show=ayah.sites.map(function(x,i){return {x:x,i:i}}).filter(function(o){return $("natural").checked||!(o.x.kind==="madd"&&o.x.counts===2)});
     $("sites").innerHTML=show.length?show.map(function(o){var x=o.x,i=o.i,v=siteVal[i]||"as expected";
       var name=x.kind==="madd"?"Madd "+x.counts:x.kind==="ghunnah"?"Ghunnah":"Qalqalah";
-      return '<div class="site'+(v!=="as expected"?' off':'')+'"><b>'+esc(ayah.wordOfGroup?ayah.words[x.group]:x.text)+'</b><label for="s'+i+'">'+name+'</label><select id="s'+i+'" data-s="'+i+'">'+siteOptions(x).map(function(o2){return '<option'+(v===o2?' selected':'')+'>'+o2+'</option>'}).join("")+'</select></div>'}).join(""):'<span class="note" style="margin:0">No lengthened madd, ghunnah or qalqalah here.</span>';
+      return '<div class="site'+(v!=="as expected"?' off':'')+'"><b>'+esc(x.words?x.words.map(function(w){return ayah.words[w]}).join(" "):ayah.wordOfGroup?ayah.words[x.group]:x.text)+'</b><label for="s'+i+'">'+name+'</label><select id="s'+i+'" data-s="'+i+'">'+siteOptions(x).map(function(o2){return '<option'+(v===o2?' selected':'')+'>'+o2+'</option>'}).join("")+'</select></div>'}).join(""):'<span class="note" style="margin:0">No lengthened madd, ghunnah or qalqalah here.</span>';
   }
   $("sites").addEventListener("change",function(e){if(e.target.dataset.s){siteVal[+e.target.dataset.s]=e.target.value;drawSites();refresh()}});
   $("natural").onchange=function(){if(ayah)drawSites()};
