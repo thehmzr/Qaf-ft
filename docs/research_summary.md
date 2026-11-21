@@ -273,3 +273,26 @@ the second), false flags at the 1% / 0.1% thresholds: GOP 0.75% / 0.31% tajweed 
   condition (studio, phone) from that condition's correct words.
 - Words next to a pause carry most false flags; inside a phrase a new voice is near studio level.
 - mdd_d is not usable as a mistake benchmark (chunk extents and labels do not match the audio).
+
+## Does the model listen, or recall? (spliced audio, 21 Nov)
+- Every ayah's text is in the training data, so the model could write the expected ayah from
+  memory. Planted text mistakes cannot show this; here the mistake is in the audio. Correct
+  studio clips are cut at word boundaries (forced-alignment word edges, widened to the middle
+  of the gap) and one inner word is deleted, repeated or swapped for another word of the same
+  voice; the reference stays the original ayah (`data_tools/splice.py`, `eval/listen_or_recall.py`).
+- About 150 clips per kind for each of the three held-out voices. The free decode follows the
+  audio: its token error against the spliced audio is 2-5%, against the ayah text 15-21%.
+  The removed, repeated or swapped word is decoded as the text says in 1-9% of clips, and in
+  1-5% where the cut-out word decodes alone as that word (so most of the rest are imperfect
+  cuts). The unseen voice (5.0) is no worse than the two the base model may have heard.
+- Verdict: the model listens. Memorised text is not a visible problem at this level; spliced
+  clips in training are not needed for this reason (non-Quran speech was not tested: no
+  diacritised non-Quran set is held locally).
+- The checker flags the changed word in 95-100% of clips at the 1% studio threshold and
+  88-98% at 0.1%. A deleted word also pulls its two neighbours (about 20% of untouched words
+  flagged, nearly all next to the cut); words two or more away stay near the unspliced level.
+  A swap flags neighbours less (8-10%). Flags therefore point at the right place, give or take
+  one word.
+- Caveats: joins were not checked by ear yet (30 samples per kind and the recalled clips are in
+  `data/eval/listen/samples/`); word edges come from CTC alignment, so some cuts keep a sliver
+  of the next or previous word.
