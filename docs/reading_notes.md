@@ -118,5 +118,5 @@ What it changes for this project:
 | Tajweed textbooks and the two classical poems | Not available from a reachable host | Publisher sites; widely printed |
 | Course videos | Video cannot be read here | Free online |
 
-Fifty-seven research papers that are free on arXiv have been downloaded into
+108 research papers that are free on arXiv have been downloaded into
 `data/papers/` (not in git).
