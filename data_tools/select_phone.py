@@ -1,42 +1,66 @@
 """Picks phone clips for training from the scores written by phone_filter.py.
 
-  python data_tools/select_phone.py [--max-err-basic 0.05] [--out data/phone_train.json]
+  python data_tools/select_phone.py [--max-err-basic 0.05]
 
 Keeps clips whose free decoding is close to the claimed ayah on words and vowels.
 Leaves out the benchmark holdout clips and every clip in the labelling queue.
-A few whole shards are kept apart for phone validation.
-Also writes the expected tokens of every ayah used, for the training notebook.
+Whole files are set apart before anything else: a few as phone-heldout (test, never trained
+on, never used to choose anything) and a few for phone validation.
+
+Writes, under data/:
+  phone_split.json     which files are heldout and which are validation (fixed by --seed)
+  phone_train.json     {"train": {file: [[clip, "sura:aya"], ...]}, "val": {...}, "rule": {...}}
+  phone_tokens.json    expected tokens of every ayah used
+  phone_manifest.jsonl one line per picked clip with its scores
 """
 import argparse, collections, glob, json, os, random
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+N_FILES = 79
 
 ap = argparse.ArgumentParser()
-ap.add_argument("--scores", default=os.path.join(ROOT, "data", "phone_scores"))
+ap.add_argument("--scores", default="data/phone_scores")
 ap.add_argument("--max-err-basic", type=float, default=0.05)
 ap.add_argument("--ratio", type=float, nargs=2, default=(0.8, 1.25), help="decoded / expected length")
 ap.add_argument("--min-sec", type=float, default=1.0)
 ap.add_argument("--max-sec", type=float, default=20.0)
-ap.add_argument("--max-per-ayah", type=int, default=300, help="cap so a few ayahs do not dominate")
-ap.add_argument("--val-shards", type=int, nargs="*", default=[10, 30, 50, 70])
-ap.add_argument("--val-per-shard", type=int, default=250)
-ap.add_argument("--out", default=os.path.join(ROOT, "data", "phone_train.json"))
-ap.add_argument("--tokens-out", default=os.path.join(ROOT, "data", "phone_tokens.json"))
+ap.add_argument("--max-per-ayah", type=int, default=30, help="cap so a few ayahs do not dominate")
+ap.add_argument("--n-heldout", type=int, default=4)
+ap.add_argument("--n-val", type=int, default=4)
+ap.add_argument("--val-per-file", type=int, default=250)
+ap.add_argument("--seed", type=int, default=0)
+ap.add_argument("--out-dir", default="data")
 a = ap.parse_args()
+P = lambda p: p if os.path.isabs(p) else os.path.join(ROOT, p)
+rng = random.Random(a.seed)
+
+# split by whole file first; file 0 holds the labelling queue, so it stays a training file
+split_path = P(os.path.join(a.out_dir, "phone_split.json"))
+if os.path.exists(split_path):
+    split = json.load(open(split_path))
+else:
+    pick = rng.sample(range(1, N_FILES), a.n_heldout + a.n_val)
+    split = dict(heldout=sorted(pick[: a.n_heldout]), val=sorted(pick[a.n_heldout:]), seed=a.seed)
+    json.dump(split, open(split_path, "w"), indent=1)
+heldout, val_files = set(split["heldout"]), set(split["val"])
 
 drop = set()
-hold = os.path.join(ROOT, "data", "tlog_holdout_ids.json")
+hold = P("data/tlog_holdout_ids.json")
 if os.path.exists(hold):
     drop |= set(json.load(open(hold)))
 else:
-    print("warning: no holdout list at", hold)
-drop |= {os.path.splitext(os.path.basename(p))[0] for p in glob.glob(os.path.join(ROOT, "data", "queue", "*.wav"))}
+    raise SystemExit(f"missing {hold}: build it from the benchmark's tlog_holdout metadata first")
+drop |= {os.path.splitext(os.path.basename(p))[0] for p in glob.glob(P("data/queue/*.wav"))}
 
 why = collections.Counter()
-train, val = {}, {}
-for f in sorted(glob.glob(os.path.join(a.scores, "clean-*.jsonl"))):
+train, val, manifest = collections.defaultdict(list), {}, []
+seen_files = []
+for f in sorted(glob.glob(os.path.join(P(a.scores), "clean-*.jsonl"))):
     idx = int(os.path.basename(f)[6:11])
+    seen_files.append(idx)
     shard = f"data/clean-{idx:05d}.parquet"
+    if idx in heldout:
+        why["heldout file"] += sum(1 for _ in open(f)); continue
     keep = []
     for line in open(f):
         r = json.loads(line)
@@ -44,40 +68,52 @@ for f in sorted(glob.glob(os.path.join(a.scores, "clean-*.jsonl"))):
         if r.get("skip"):
             why["skipped when scoring"] += 1; continue
         if os.path.splitext(r["path"])[0] in drop:
-            why["holdout or queue"] += 1; continue
+            why["holdout or queue clip"] += 1; continue
         if not a.min_sec <= r["dur"] <= a.max_sec:
             why["length"] += 1; continue
         if not a.ratio[0] <= r["ratio"] <= a.ratio[1]:
             why["decoded length"] += 1; continue
         if r["err_basic"] > a.max_err_basic:
             why["err_basic"] += 1; continue
-        keep.append([r["path"], f"{r['sura']}:{r['aya']}"])
-    if idx in a.val_shards:
-        val[shard] = keep[: a.val_per_shard]
-    elif keep:
-        train[shard] = keep
-
-# cap clips per ayah, chosen at random across shards
-rng = random.Random(0)
-pool = [(s, c) for s, v in train.items() for c in v]
-rng.shuffle(pool)
-count, capped = collections.Counter(), collections.defaultdict(list)
-for s, c in pool:
-    count[c[1]] += 1
-    if count[c[1]] <= a.max_per_ayah:
-        capped[s].append(c)
+        keep.append(r)
+    if idx in val_files:
+        rng.shuffle(keep)
+        val[shard] = [[r["path"], f"{r['sura']}:{r['aya']}"] for r in keep[: a.val_per_file]]
     else:
-        why["ayah cap"] += 1
-train = {s: sorted(capped[s]) for s in sorted(capped)}
+        for r in keep:
+            train[r["sura"], r["aya"]].append((shard, r))
 
-n_tr = sum(map(len, train.values())); n_va = sum(map(len, val.values()))
+# cap clips per ayah, chosen at random
+picked = collections.defaultdict(list)
+for (s, ay), rows in sorted(train.items()):
+    rng.shuffle(rows)
+    why["ayah cap"] += max(0, len(rows) - a.max_per_ayah)
+    for shard, r in rows[: a.max_per_ayah]:
+        picked[shard].append([r["path"], f"{s}:{ay}"])
+        manifest.append(dict(file=shard, clip=r["path"], sura=s, aya=ay, dur=r["dur"], err=r["err"],
+                             err_basic=r["err_basic"], ratio=r["ratio"], lengths_unverified=r["err"] > a.max_err_basic))
+train_sel = {k: sorted(v) for k, v in sorted(picked.items())}
+
+n_tr = sum(map(len, train_sel.values())); n_va = sum(map(len, val.values()))
+hours = sum(m["dur"] for m in manifest) / 3600
+missing = sorted(set(range(N_FILES)) - set(seen_files))
 print("clips:", dict(why))
-print(f"selected: train {n_tr} from {len(train)} shards, val {n_va} from {len(val)} shards")
-ayahs = collections.Counter(k for v in train.values() for _, k in v)
-print(f"train covers {len(ayahs)} ayahs; most repeated: {ayahs.most_common(3)}")
+print(f"files scored: {len(seen_files)} of {N_FILES}" + (f" (missing {missing[:10]}{'...' if len(missing) > 10 else ''})" if missing else ""))
+print(f"heldout files {sorted(heldout)}, val files {sorted(val_files)}")
+print(f"selected: train {n_tr} clips ({hours:.1f} h) from {len(train_sel)} files covering {len(train)} ayahs; val {n_va}")
+if not val:
+    print("warning: no validation file has scores yet")
+by_sura = collections.Counter(m["sura"] for m in manifest)
+print("train clips by sura (top 10):", by_sura.most_common(10))
+print("lengths unverified:", sum(m["lengths_unverified"] for m in manifest))
 
-json.dump(dict(train=train, val=val, rule=vars(a)), open(a.out, "w"))
-tokens = json.load(open(os.path.join(ROOT, "data", "ayah_tokens.json")))
-used = {k for v in list(train.values()) + list(val.values()) for _, k in v}
-json.dump({k: tokens[k] for k in sorted(used)}, open(a.tokens_out, "w"), ensure_ascii=False)
-print("wrote", a.out, "and", a.tokens_out)
+rule = {k: v for k, v in vars(a).items()}
+json.dump(dict(train=train_sel, val=val, rule=rule, split=split),
+          open(P(os.path.join(a.out_dir, "phone_train.json")), "w"))
+tokens = json.load(open(P("data/ayah_tokens.json")))
+used = {k for v in list(train_sel.values()) + list(val.values()) for _, k in v}
+json.dump({k: tokens[k] for k in sorted(used)}, open(P(os.path.join(a.out_dir, "phone_tokens.json")), "w"), ensure_ascii=False)
+with open(P(os.path.join(a.out_dir, "phone_manifest.jsonl")), "w") as fo:
+    for m in manifest:
+        fo.write(json.dumps(m) + "\n")
+print("wrote phone_split.json, phone_train.json, phone_tokens.json, phone_manifest.jsonl in", a.out_dir)
