@@ -38,7 +38,7 @@ button:hover{background:var(--accent-soft)} button:focus-visible{outline:2px sol
 <main>
   <nav><a href="index.html">Progress</a><a href="system.html">System</a><a href="long.html">Long recitation</a></nav>
   <h1 id="title">Long recitation, ayah by ayah</h1>
-  <p class="lede">A long recitation, checked by ear: no mistakes in words or vowels; only a very few tajweed slips (madd lengths and the like). It is cut into ayahs by the word times the model found. Click a word to play from it. Thresholds are set on the first half of this recitation. Grey words could not be matched in the audio.</p>
+  <p class="lede">Plays the whole recording without gaps; the page follows the ayah and word being recited. A long recitation, checked by ear: no mistakes in words or vowels; only a very few tajweed slips (madd lengths and the like). It is cut into ayahs by the word times the model found. Click a word to play from it. Thresholds are set on the first half of this recitation. Grey words could not be matched in the audio.</p>
   <p class="lede" id="meaning"></p>
   <div class="legend"><span class="w flag" id="lg1">1% level</span><span class="w strong" id="lg2">0.1% level</span><span class="w miss">not matched</span></div>
   <div class="bar">
@@ -56,7 +56,7 @@ button:hover{background:var(--accent-soft)} button:focus-visible{outline:2px sol
 <script>
 (function(){
   var params=new URLSearchParams(location.search), set=params.get("set")||"fatihah_baqarah";
-  var base="/long/"+encodeURIComponent(set)+"/ayahs/";
+  var dirs=params.get("dir")?[params.get("dir")]:["ayahs_v2","ayahs"], base="";
   var data=null, cur=-1, audio=document.getElementById("audio");
   function $(id){return document.getElementById(id)}
   function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
@@ -78,31 +78,49 @@ button:hover{background:var(--accent-soft)} button:focus-visible{outline:2px sol
     $("list").innerHTML=h||'<p class="lede">No ayah matches this filter.</p>';
     $("status").textContent=data.ayahs.length+" ayahs · "+(data.ayahs.reduce(function(s,a){return s+a.end-a.start},0)/60).toFixed(0)+" min";
   }
-  function play(i,from){
-    if(i<0||i>=data.ayahs.length)return;
+  // gapless: one continuous stream of the whole recording; ayahs and words are found by time
+  function abs(a,w,key){var v=w["abs_"+key];return v!=null?v:(w[key]==null?null:a.start+w[key])}
+  function ayahAt(t){var lo=0,hi=data.ayahs.length-1,r=-1;while(lo<=hi){var m=(lo+hi)>>1;if(data.ayahs[m].start<=t){r=m;lo=m+1}else hi=m-1}return r}
+  function mark(i){
+    if(i===cur)return;
     document.querySelectorAll(".ayah.playing").forEach(function(e){e.classList.remove("playing")});
+    document.querySelectorAll(".w.now").forEach(function(e){e.classList.remove("now")});
     cur=i; var el=$("a"+i); if(el){el.classList.add("playing");el.scrollIntoView({block:"nearest",behavior:"smooth"})}
-    audio.src=base+pad(data.ayahs[i].sura)+"_"+pad(data.ayahs[i].ayah)+".wav";
-    audio.onloadedmetadata=function(){if(from)audio.currentTime=from;audio.play()};
-    $("play").textContent="Pause";
+  }
+  var stopAt=null;
+  function play(i,t){
+    if(i<0||i>=data.ayahs.length)return;
+    var a=data.ayahs[i]; mark(i);
+    stopAt=$("auto").checked?null:a.end;
+    var go=function(){audio.currentTime=(t!=null?t:a.start);audio.play();$("play").textContent="Pause"};
+    if(!audio.src){audio.src="/long/"+encodeURIComponent(set)+"/audio16k.wav";audio.addEventListener("loadedmetadata",go,{once:true})}else go();
   }
   function step(d){var v=visible(), p=v.indexOf(cur); var n=p<0?v[0]:v[p+d]; if(n!=null)play(n)}
   audio.addEventListener("timeupdate",function(){
-    if(cur<0)return; var t=audio.currentTime;
-    document.querySelectorAll('#a'+cur+' .w').forEach(function(e){var w=data.ayahs[cur].words[+e.dataset.k];e.classList.toggle("now",w.start!=null&&t>=w.start&&t<w.end)});
+    if(!data)return; var t=audio.currentTime, i=ayahAt(t);
+    if(stopAt!=null&&t>=stopAt){audio.pause();stopAt=null;$("play").textContent="Play";return}
+    if(i<0)return;
+    if($("flagsOnly").value!=="all"&&$("auto").checked){var v=visible();if(v.indexOf(i)<0){var n=v.find(function(x){return x>i});if(n!=null){play(n)}else{audio.pause()}return}}
+    mark(i); var a=data.ayahs[i];
+    document.querySelectorAll('#a'+i+' .w').forEach(function(e){var w=a.words[+e.dataset.k],s=abs(a,w,"start"),f=abs(a,w,"end");e.classList.toggle("now",s!=null&&t>=s&&t<f)});
   });
-  audio.addEventListener("ended",function(){document.querySelectorAll(".w.now").forEach(function(e){e.classList.remove("now")});$("play").textContent="Play";if($("auto").checked)step(1)});
-  audio.addEventListener("error",function(){$("status").innerHTML='<span class="err">Could not load the audio for this ayah.</span>'});
+  audio.addEventListener("ended",function(){$("play").textContent="Play"});
+  audio.addEventListener("error",function(){$("status").innerHTML='<span class="err">Could not load the recording.</span>'});
   document.addEventListener("click",function(e){
     var b=e.target.closest("[data-play]"); if(b){play(+b.dataset.play);return}
-    var w=e.target.closest(".w[data-t]"); if(w){var i=+w.dataset.i; if(i===cur&&audio.src){audio.currentTime=+w.dataset.t;audio.play()}else play(i,+w.dataset.t)}
+    var w=e.target.closest(".w[data-t]"); if(w){var i=+w.dataset.i,a=data.ayahs[i];play(i,abs(a,a.words[+w.dataset.k],"start"))}
   });
-  $("play").onclick=function(){if(cur<0){step(1);return} if(audio.paused){audio.play();this.textContent="Pause"}else{audio.pause();this.textContent="Play"}};
+  $("play").onclick=function(){if(cur<0||!audio.src){step(1);return} if(audio.paused){audio.play();this.textContent="Pause"}else{audio.pause();this.textContent="Play"}};
   $("prev").onclick=function(){step(-1)}; $("next").onclick=function(){step(1)};
   $("mode").onchange=render; $("flagsOnly").onchange=render;
   document.addEventListener("keydown",function(e){if(e.target.tagName==="SELECT"||e.target.tagName==="INPUT")return;if(e.key===" "){e.preventDefault();$("play").click()}else if(e.key==="ArrowRight")step(-1);else if(e.key==="ArrowLeft")step(1)});
-  fetch(base+"ayahs.json",{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()}).then(function(d){data=d;render()})
-    .catch(function(){$("status").innerHTML='<span class="err">No ayah clips found for "'+esc(set)+'". Run data_tools/ayah_clips.py first.</span>'});
+  function load(k){
+    if(k>=dirs.length){$("status").innerHTML='<span class="err">No ayah clips found for "'+esc(set)+'".</span>';return}
+    var b="/long/"+encodeURIComponent(set)+"/"+encodeURIComponent(dirs[k])+"/";
+    fetch(b+"ayahs.json",{cache:"no-store"}).then(function(r){if(!r.ok)throw new Error(r.status);return r.json()})
+      .then(function(d){base=b;data=d;render()}).catch(function(){load(k+1)});
+  }
+  load(0);
 })();
 </script>
 </body>

@@ -69,13 +69,38 @@ class Handler(http.server.SimpleHTTPRequestHandler):
             f = os.path.realpath(os.path.join(LONG, path[len("/long/"):]))
             if not f.startswith(LONG + os.sep) or not f.endswith((".wav", ".json")) or not os.path.isfile(f):
                 self.send_error(404); return
-            data = open(f, "rb").read()
-            self.send_response(200)
+            size = os.path.getsize(f)
+            start, end = 0, size - 1
+            rng = self.headers.get("Range", "")
+            if rng.startswith("bytes="):            # byte ranges, so the player can seek in long files
+                lo, _, hi = rng[6:].split(",")[0].partition("-")
+                if lo:
+                    start, end = int(lo), int(hi) if hi else size - 1
+                elif hi:
+                    start = max(0, size - int(hi))
+                end = min(end, size - 1)
+                if start > end:
+                    self.send_response(416); self.send_header("Content-Range", f"bytes */{size}"); self.end_headers(); return
+                self.send_response(206)
+                self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
+            else:
+                self.send_response(200)
             self.send_header("Content-Type", "audio/wav" if f.endswith(".wav") else "application/json; charset=utf-8")
-            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Accept-Ranges", "bytes")
+            self.send_header("Content-Length", str(end - start + 1))
             self.send_header("Cache-Control", "no-store")
             self.end_headers()
-            self.wfile.write(data)
+            with open(f, "rb") as fh:
+                fh.seek(start)
+                left = end - start + 1
+                try:
+                    while left > 0:
+                        chunk = fh.read(min(1 << 20, left))
+                        if not chunk:
+                            break
+                        self.wfile.write(chunk); left -= len(chunk)
+                except (BrokenPipeError, ConnectionResetError):
+                    pass                            # the player moved on
             return
         if path == "/state.json":
             try:
