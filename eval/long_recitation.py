@@ -26,7 +26,7 @@ from functools import lru_cache
 from rapidfuzz.distance import Levenshtein
 from quran_transcript import quran_phonetizer
 from qafft.phonetic import ayah_uthmani, default_moshaf, fold_with_groups
-from qafft.verify import basic_classes, extra_sounds, group_scores, to_basic, token_scores
+from qafft.verify import basic_classes, extra_sounds, gop_sf_scores, group_scores, to_basic, token_scores
 from qafft.wordmap import group_words, map_tokens
 from cut_recitation import sura_stream
 
@@ -60,7 +60,13 @@ def portion(sura, ayah, w0, w1):
     return toks, [w0 + x for x in tw]
 
 
+SCORE = "current"
+
+
 def badness(lp, ids, grps, blank):
+    if SCORE == "gop":
+        g = gop_sf_scores(lp, ids, grps, blank)
+        return None if g is None else {k: -v for k, v in g.items()}
     ts = token_scores(lp, ids, blank)
     if ts is None:
         return None
@@ -75,7 +81,10 @@ def main():
     ap.add_argument("dir")
     ap.add_argument("--thresholds", default=None, help="json with per-mode thresholds from another set")
     ap.add_argument("--out", default=None)
+    ap.add_argument("--score", default="current", choices=["current", "gop"])
+    ap.add_argument("--words-out", default=None, help="where to write per-word scores (default DIR/word_scores.json)")
     a = ap.parse_args()
+    global SCORE; SCORE = a.score
     meta = json.load(open(os.path.join(a.dir, "pieces.json")))
     tokens = json.load(open(os.path.join(ROOT, "qafft", "vocab.json")))["tokens"]
     vocab = {t: i for i, t in enumerate(tokens)}; blank = len(tokens)
@@ -204,7 +213,7 @@ def main():
                   f"(95% {lo:.2%}-{hi:.2%})  ayahs with a flag: {ay_flag:.1%} of {len(full_ayahs)}")
     out = a.out or os.path.join(a.dir, "false_flags.json")
     json.dump(dict(results=results, thresholds=sets, n_words=len(real)), open(out, "w"), indent=1)
-    json.dump(words, open(os.path.join(a.dir, "word_scores.json"), "w"))
+    json.dump(words, open(a.words_out or os.path.join(a.dir, "word_scores.json"), "w"))
     print("wrote", out)
 
 
